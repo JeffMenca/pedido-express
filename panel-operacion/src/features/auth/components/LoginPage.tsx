@@ -2,12 +2,44 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { errorMessage } from '../../../shared/http/errors'
+import { illustrationUrl } from '../../../shared/lib/illustrations'
 import { EASE_OUT_QUART } from '../../../shared/lib/motion'
 import { BrandMark } from '../../../shared/ui/BrandMark'
 import { Button } from '../../../shared/ui/Button'
 import { Divider } from '../../../shared/ui/Divider'
 import { useAuth } from '../hooks/useAuth'
 import { useLogin } from '../hooks/useLogin'
+
+const HANGING = [
+  { sku: 'C-001', tint: '#FFF1C9', size: 'w-[42%]', rotate: -2 },
+  { sku: 'P-004', tint: '#FDEBC8', size: 'w-[30%]', rotate: 1.5 },
+  { sku: 'P-008', tint: '#DDEBF7', size: 'w-[24%]', rotate: -1 },
+]
+
+/** Three menu items clipped to the rail, the same way comandas hang above the pass. */
+function HangingMenu() {
+  return (
+    <div aria-hidden="true" className="relative hidden max-w-xl sm:block">
+      <div className="h-[3px] rounded-full bg-mostaza" />
+      <div className="flex items-start gap-[4%] px-[3%]">
+        {HANGING.map((item, i) => (
+          <motion.div
+            key={item.sku}
+            className={`relative ${item.size} origin-top`}
+            initial={{ opacity: 0, y: 28, rotate: 0 }}
+            animate={{ opacity: 1, y: 0, rotate: item.rotate }}
+            transition={{ type: 'spring', stiffness: 140, damping: 16, delay: 0.15 + i * 0.12 }}
+          >
+            <span className="mx-auto block h-4 w-2.5 rounded-b-sm bg-white/25" />
+            <span className="block aspect-square rounded-[22px] p-[8%]" style={{ backgroundColor: item.tint }}>
+              <img src={illustrationUrl(item.sku)} alt="" draggable={false} className="size-full object-contain" />
+            </span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 const inputClass =
   'mt-1.5 block min-h-12 w-full rounded-control border border-ink/15 bg-ticket px-3 text-base font-normal text-ink focus:border-ink focus:outline-none'
@@ -33,13 +65,16 @@ export function LoginPage() {
           <BrandMark />
           <span className="font-display text-lg font-bold tracking-tight">Pedido Express</span>
         </div>
-        <div className="max-w-lg">
-          <h1 className="font-display text-[28px] leading-[1.05] font-extrabold tracking-tight sm:text-[40px]">
-            Caja y cocina en el mismo riel.
-          </h1>
-          <p className="mt-4 text-base text-white/60">
-            Cobra, prepara y entrega cada orden desde una sola pantalla que se actualiza sola.
-          </p>
+        <div className="flex flex-col gap-12">
+          <HangingMenu />
+          <div className="max-w-lg">
+            <h1 className="font-display text-[28px] leading-[1.05] font-extrabold tracking-tight sm:text-[40px]">
+              Caja y cocina en el mismo riel.
+            </h1>
+            <p className="mt-4 text-base text-white/60">
+              Cobra, prepara y entrega cada orden desde una sola pantalla que se actualiza sola.
+            </p>
+          </div>
         </div>
         <p className="hidden font-mono text-xs text-white/40 lg:block">Panel de operación</p>
       </section>

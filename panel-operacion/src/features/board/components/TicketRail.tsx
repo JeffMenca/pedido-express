@@ -1,45 +1,84 @@
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import type { OrderSummary, Role } from '../../../shared/http/contract'
+import { sceneUrl } from '../../../shared/lib/illustrations'
+import { EASE_OUT_QUART } from '../../../shared/lib/motion'
 import { Divider } from '../../../shared/ui/Divider'
 import { Skeleton } from '../../../shared/ui/Skeleton'
+import type { ViewDef } from '../hooks/views'
 import { OrderTicket } from './OrderTicket'
 
 type Props = {
   orders: OrderSummary[] | undefined
   role: Role
   now: number
-  emptyText: string
+  empty: ViewDef['empty']
 }
 
-const GRID = 'grid items-start gap-x-5 gap-y-6 [grid-template-columns:repeat(auto-fill,minmax(min(100%,264px),1fr))]'
+const GRID = 'grid items-start gap-x-5 gap-y-6 [grid-template-columns:repeat(auto-fill,minmax(min(100%,272px),1fr))]'
+const SKELETON_ROWS = [2, 3, 2, 3]
 
-function TicketSkeleton() {
+function TicketSkeleton({ rows }: { rows: number }) {
   return (
-    <div className="ticket-perforated rounded-b-ticket bg-ticket pt-6 pr-4 pb-4 pl-6">
-      <div className="flex justify-between">
-        <Skeleton className="h-7 w-28" />
-        <Skeleton className="h-4 w-10" />
+    <div className="ticket-perforated relative rounded-b-ticket bg-ticket pt-6 pr-4 pb-4 pl-6">
+      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-ink/[0.08]" />
+      <div className="flex items-start justify-between">
+        <Skeleton className="h-7 w-32" />
+        <Skeleton className="mt-1 h-4 w-11" />
       </div>
-      <Skeleton className="mt-3 h-3 w-24" />
+      <Skeleton className="mt-3 h-3 w-28" />
       <Divider className="mt-4" />
-      <Skeleton className="mt-3 h-4 w-4/5" />
-      <Skeleton className="mt-2 h-4 w-3/5" />
+      <div className="mt-3 space-y-2.5">
+        {Array.from({ length: rows }, (_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <Skeleton className="size-9 shrink-0 rounded-control" />
+            <Skeleton className="h-4 w-5 shrink-0" />
+            <Skeleton className={`h-4 ${i % 2 === 0 ? 'w-3/5' : 'w-2/5'}`} />
+          </div>
+        ))}
+      </div>
       <Divider className="mt-4" />
-      <Skeleton className="mt-3 ml-auto h-5 w-20" />
-      <Skeleton className="mt-4 h-11 w-full" />
+      <div className="mt-3 flex items-baseline justify-between">
+        <Skeleton className="h-3 w-10" />
+        <Skeleton className="h-6 w-24" />
+      </div>
+      <Skeleton className="mt-4 h-11 w-full rounded-control" />
     </div>
   )
 }
 
+function EmptyRail({ empty }: { empty: ViewDef['empty'] }) {
+  const scene = sceneUrl(empty.scene)
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: EASE_OUT_QUART, delay: 0.3 }}
+      className="mx-auto flex max-w-md flex-col items-center px-6 pt-14 pb-10 text-center"
+    >
+      {scene && (
+        <img
+          src={scene}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="h-auto w-[280px] max-w-full opacity-70 saturate-[0.65]"
+        />
+      )}
+      <p className="mt-6 font-display text-xl font-bold tracking-tight text-ink">{empty.title}</p>
+      <p className="mt-2 text-base text-humo">{empty.next}</p>
+    </motion.div>
+  )
+}
+
 /** Tickets hang from a thin mostaza rail, like comandas clipped above the pass. */
-export function TicketRail({ orders, role, now, emptyText }: Props) {
+export function TicketRail({ orders, role, now, empty }: Props) {
   return (
     <div className="mt-6">
       <div aria-hidden="true" className="h-[3px] rounded-full bg-mostaza" />
       {orders === undefined ? (
         <div className={GRID} aria-busy="true" aria-label="Cargando órdenes">
-          {[0, 1, 2].map((i) => (
-            <TicketSkeleton key={i} />
+          {SKELETON_ROWS.map((rows, i) => (
+            <TicketSkeleton key={i} rows={rows} />
           ))}
         </div>
       ) : (
@@ -51,12 +90,7 @@ export function TicketRail({ orders, role, now, emptyText }: Props) {
               ))}
             </AnimatePresence>
           </ul>
-          {orders.length === 0 && (
-            <div className="mx-auto mt-0 max-w-xs rounded-b-ticket border-x border-b border-dashed border-ink/20 px-6 py-10 text-center">
-              <p className="font-medium text-ink">{emptyText}</p>
-              <p className="mt-1 text-sm text-humo">Las nuevas aparecen aquí solas.</p>
-            </div>
-          )}
+          {orders.length === 0 && <EmptyRail empty={empty} />}
         </>
       )}
     </div>

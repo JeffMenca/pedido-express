@@ -6,13 +6,13 @@ import { useCancelOrder, useConfirmCash, useUpdateStatus } from '../hooks/useOrd
 import { CancelOrderModal } from './CancelOrderModal'
 import { CashPaymentModal } from './CashPaymentModal'
 
-type Props = { order: OrderSummary; role: Role }
+type Props = { order: OrderSummary; role: Role; onDone?: () => void }
 
 type Dialog = 'cash' | 'cancel' | null
 
 const CANCELLABLE = new Set(['PENDIENTE_PAGO', 'PAGADA'])
 
-export function OrderActions({ order, role }: Props) {
+export function OrderActions({ order, role, onDone }: Props) {
   const [dialog, setDialog] = useState<Dialog>(null)
   const status = useUpdateStatus(order.id)
   const cash = useConfirmCash(order.id)
@@ -26,11 +26,11 @@ export function OrderActions({ order, role }: Props) {
   if (canCollect) {
     primary = { label: 'Cobrar', pendingLabel: 'Cobrando…', run: () => setDialog('cash') }
   } else if (role === 'COCINA' && order.status === 'PAGADA') {
-    primary = { label: 'Iniciar', pendingLabel: 'Iniciando…', run: () => status.mutate('EN_PREPARACION') }
+    primary = { label: 'Iniciar', pendingLabel: 'Iniciando…', run: () => status.mutate('EN_PREPARACION', { onSuccess: onDone }) }
   } else if (role === 'COCINA' && order.status === 'EN_PREPARACION') {
-    primary = { label: 'Marcar lista', pendingLabel: 'Guardando…', run: () => status.mutate('LISTA') }
+    primary = { label: 'Marcar lista', pendingLabel: 'Guardando…', run: () => status.mutate('LISTA', { onSuccess: onDone }) }
   } else if (isCashier && order.status === 'LISTA') {
-    primary = { label: 'Entregar', pendingLabel: 'Entregando…', run: () => status.mutate('ENTREGADA') }
+    primary = { label: 'Entregar', pendingLabel: 'Entregando…', run: () => status.mutate('ENTREGADA', { onSuccess: onDone }) }
   }
 
   if (!primary && !canCancel) return null
@@ -66,10 +66,18 @@ export function OrderActions({ order, role }: Props) {
           open={dialog === 'cash'}
           orderCode={order.code}
           totalCents={order.totalCents}
+          lines={order.lines}
           pending={cash.isPending}
           errorText={cash.isError ? errorMessage(cash.error) : null}
           onClose={closeDialog}
-          onConfirm={(receivedCents) => cash.mutate(receivedCents, { onSuccess: closeDialog })}
+          onConfirm={(receivedCents) =>
+            cash.mutate(receivedCents, {
+              onSuccess: () => {
+                closeDialog()
+                onDone?.()
+              },
+            })
+          }
         />
       )}
       {canCancel && (

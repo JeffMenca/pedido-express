@@ -1,4 +1,5 @@
 import type { OrderStatus, OrderSummary, Role } from '../../../shared/http/contract'
+import type { SceneName } from '../../../shared/lib/illustrations'
 
 export type BoardStatus = Extract<OrderStatus, 'PENDIENTE_PAGO' | 'PAGADA' | 'EN_PREPARACION' | 'LISTA'>
 export type ViewSlug = 'por-cobrar' | 'pagadas' | 'en-cocina' | 'listas'
@@ -9,7 +10,7 @@ export type ViewDef = {
   title: string
   hint: string
   hintByRole?: Partial<Record<Role, string>>
-  emptyText: string
+  empty: { scene: SceneName; title: string; next: string }
 }
 
 export const VIEW_PARAM = 'vista'
@@ -20,15 +21,23 @@ const ALL_VIEWS: ViewDef[] = [
     status: 'PENDIENTE_PAGO',
     title: 'Por cobrar',
     hint: 'Cobra las órdenes en efectivo para enviarlas a cocina.',
-    emptyText: 'No hay órdenes en efectivo por cobrar.',
+    empty: {
+      scene: 'recibido',
+      title: 'No hay cobros pendientes.',
+      next: 'Las órdenes en efectivo aparecen aquí en cuanto el cliente las confirma.',
+    },
   },
   {
     slug: 'pagadas',
     status: 'PAGADA',
     title: 'Pagadas',
     hint: 'Órdenes pagadas que esperan a cocina.',
-    hintByRole: { COCINA: 'Inicia cada orden en el orden en que llegó.' },
-    emptyText: 'No hay órdenes esperando a cocina.',
+    hintByRole: { COCINA: 'Inicia la preparación de cada orden pagada.' },
+    empty: {
+      scene: 'pagado',
+      title: 'Ninguna orden espera a cocina.',
+      next: 'Las órdenes aparecen aquí al quedar pagadas, con tarjeta o en caja.',
+    },
   },
   {
     slug: 'en-cocina',
@@ -36,7 +45,11 @@ const ALL_VIEWS: ViewDef[] = [
     title: 'En cocina',
     hint: 'Lo que cocina está preparando ahora.',
     hintByRole: { COCINA: 'Marca cada orden como lista al terminarla.' },
-    emptyText: 'Nada en preparación.',
+    empty: {
+      scene: 'cocina',
+      title: 'Nada en preparación.',
+      next: 'Las órdenes aparecen aquí cuando cocina las inicia.',
+    },
   },
   {
     slug: 'listas',
@@ -44,7 +57,11 @@ const ALL_VIEWS: ViewDef[] = [
     title: 'Listas',
     hint: 'Órdenes listas que esperan entrega.',
     hintByRole: { CAJERO: 'Entrega cada orden al cliente y márcala como entregada.' },
-    emptyText: 'No hay órdenes por entregar.',
+    empty: {
+      scene: 'lista',
+      title: 'Nada por entregar todavía.',
+      next: 'Las órdenes aparecen aquí cuando cocina las marca listas.',
+    },
   },
 ]
 
@@ -75,6 +92,5 @@ export function groupByView(orders: OrderSummary[], views: ViewDef[]): Map<Board
     if (order.status === 'PENDIENTE_PAGO' && order.paymentMethod !== 'EFECTIVO') continue
     groups.get(order.status as BoardStatus)?.push(order)
   }
-  for (const list of groups.values()) list.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
   return groups
 }

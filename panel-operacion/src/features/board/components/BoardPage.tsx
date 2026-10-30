@@ -9,7 +9,9 @@ import { Icon } from '../../../shared/ui/Icon'
 import { useActiveView } from '../hooks/useActiveView'
 import { useBoardOrders } from '../hooks/useBoardOrders'
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed'
+import { DEFAULT_FILTERS, applyFilters, isFiltering, type OrderFilters } from '../hooks/orderFilters'
 import { groupByView, hintFor, viewsForRole, type ViewSlug } from '../hooks/views'
+import { FilterBar } from './FilterBar'
 import { PollingNotice } from './PollingNotice'
 import { Sidebar, SidebarDrawer } from './Sidebar'
 import { TicketRail } from './TicketRail'
@@ -24,6 +26,7 @@ export function BoardPage({ username, role, onSignOut }: Props) {
   const now = useNow(1000)
   const [collapsed, toggleCollapsed] = useSidebarCollapsed()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [filters, setFilters] = useState<OrderFilters>(DEFAULT_FILTERS)
 
   const groups = useMemo(() => (query.data ? groupByView(query.data, views) : null), [query.data, views])
   const counts = useMemo(() => {
@@ -31,7 +34,9 @@ export function BoardPage({ username, role, onSignOut }: Props) {
     if (groups) for (const v of views) result[v.slug] = groups.get(v.status)?.length ?? 0
     return result
   }, [groups, views])
-  const orders = groups?.get(view.status)
+  const viewOrders = groups?.get(view.status)
+  const orders = useMemo(() => (viewOrders ? applyFilters(viewOrders, filters) : undefined), [viewOrders, filters])
+  const filteredOut = isFiltering(filters) && orders?.length === 0 && (viewOrders?.length ?? 0) > 0
 
   useEffect(() => {
     if (!drawerOpen) return
@@ -98,8 +103,23 @@ export function BoardPage({ username, role, onSignOut }: Props) {
                 />
               )}
               <ViewHeader title={view.title} hint={hintFor(view, role)} count={orders?.length} />
-              {!(query.isError && query.data === undefined) && (
-                <TicketRail orders={orders} role={role} now={now} emptyText={view.emptyText} />
+              <FilterBar filters={filters} onChange={setFilters} shown={orders?.length} total={viewOrders?.length} />
+              {filteredOut ? (
+                <div className="mt-16 flex flex-col items-center text-center">
+                  <p className="font-display text-xl font-bold">Ninguna orden coincide con los filtros.</p>
+                  <p className="mt-2 text-sm text-humo">Prueba con otro número, canal o método de pago.</p>
+                  <button
+                    type="button"
+                    onClick={() => setFilters({ ...DEFAULT_FILTERS, sort: filters.sort })}
+                    className="mt-5 h-11 rounded-control bg-ink px-5 text-sm font-semibold text-white active:scale-[0.97]"
+                  >
+                    Limpiar filtros
+                  </button>
+                </div>
+              ) : (
+                !(query.isError && query.data === undefined) && (
+                  <TicketRail orders={orders} role={role} now={now} empty={view.empty} />
+                )
               )}
             </motion.section>
           </AnimatePresence>

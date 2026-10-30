@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import type { Role } from '../../../shared/http/contract'
 import { BrandMark } from '../../../shared/ui/BrandMark'
 import { Icon } from '../../../shared/ui/Icon'
+import { Odometer } from '../../../shared/ui/Odometer'
+import { Skeleton } from '../../../shared/ui/Skeleton'
 import { VIEW_PARAM, type ViewDef, type ViewSlug } from '../hooks/views'
 import { ROLE_LABEL, VIEW_ICON } from './viewMeta'
 
@@ -53,7 +55,7 @@ function SidebarBody({ views, counts, activeSlug, collapsed, username, role, onS
                   to={{ search: `?${VIEW_PARAM}=${view.slug}` }}
                   onClick={onNavigate}
                   aria-current={active ? 'page' : undefined}
-                  aria-label={collapsed ? `${view.title}, ${count ?? 0} ${count === 1 ? "orden" : "órdenes"}` : undefined}
+                  aria-label={collapsed && count !== undefined ? `${view.title}, ${count} ${count === 1 ? 'orden' : 'órdenes'}` : collapsed ? view.title : undefined}
                   title={collapsed ? view.title : undefined}
                   className={`flex rounded-control transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mostaza ${
                     active ? 'bg-white/[0.07] text-white' : 'text-white/65 hover:bg-white/[0.04] hover:text-white'
@@ -66,7 +68,11 @@ function SidebarBody({ views, counts, activeSlug, collapsed, username, role, onS
                       active ? 'font-bold text-white' : 'font-medium'
                     }`}
                   >
-                    {count ?? '–'}
+                    {count === undefined ? (
+                      <Skeleton tone="dark" className={`${collapsed ? 'h-2.5 w-4' : 'h-3 w-5'} rounded-sm`} />
+                    ) : (
+                      <Odometer value={count} />
+                    )}
                   </span>
                 </Link>
               </li>

@@ -4,11 +4,14 @@ import { centsToInput, computeChangeCents, formatGTQ, parseAmountToCents } from 
 import { Button } from '../../../shared/ui/Button'
 import { Divider } from '../../../shared/ui/Divider'
 import { Modal } from '../../../shared/ui/Modal'
+import type { OrderLineSummary } from '../../../shared/http/contract'
+import { ProductThumb } from '../../catalog'
 
 type Props = {
   open: boolean
   orderCode: string
   totalCents: number
+  lines?: OrderLineSummary[]
   pending: boolean
   errorText: string | null
   onClose: () => void
@@ -17,7 +20,7 @@ type Props = {
 
 const BILLS_CENTS = [5_000, 10_000, 20_000]
 
-export function CashPaymentModal({ open, orderCode, totalCents, pending, errorText, onClose, onConfirm }: Props) {
+export function CashPaymentModal({ open, orderCode, totalCents, lines = [], pending, errorText, onClose, onConfirm }: Props) {
   const [raw, setRaw] = useState('')
   const reduceMotion = useReducedMotion()
   const receivedCents = parseAmountToCents(raw)
@@ -43,6 +46,29 @@ export function CashPaymentModal({ open, orderCode, totalCents, pending, errorTe
   return (
     <Modal open={open} eyebrow={orderCode} title="Cobrar en efectivo" onClose={close}>
       <form onSubmit={submit}>
+        {lines.length > 0 && (
+          <>
+            <ul aria-label="Artículos" className="-mr-2 max-h-44 space-y-2 overflow-y-auto pr-2 text-sm">
+              {lines.map((line, i) => (
+                <li key={`${line.name}-${i}`} className="flex items-center gap-3">
+                  <ProductThumb name={line.name} />
+                  <span className="w-7 shrink-0 font-mono font-bold tabular-nums">{line.quantity}×</span>
+                  <span className="min-w-0 flex-1 font-medium text-ink">
+                    {line.name}
+                    {(line.upgradeLarge || (line.modifiers?.length ?? 0) > 0) && (
+                      <span className="block text-[13px] font-normal text-humo">
+                        {[line.upgradeLarge ? 'Agrandado' : null, ...(line.modifiers ?? []).map((m) => `+ ${m}`)]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Divider className="my-4" />
+          </>
+        )}
         <p className="text-xs font-semibold text-humo">Total a cobrar</p>
         <p className="mt-1 font-mono text-[40px] leading-none font-bold tabular-nums text-ink">{formatGTQ(totalCents)}</p>
 

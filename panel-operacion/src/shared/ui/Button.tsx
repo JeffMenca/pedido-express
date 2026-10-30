@@ -20,7 +20,7 @@ export function Button({ variant = 'primary', pending = false, disabled, classNa
       {...rest}
       disabled={disabled || pending}
       aria-busy={pending || undefined}
-      className={`inline-flex min-h-11 items-center justify-center rounded-control px-4 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center press rounded-control px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`}
     >
       {children}
     </button>

@@ -1,4 +1,4 @@
-export type IconName = 'cash' | 'receipt' | 'flame' | 'bell' | 'chevron-left' | 'menu' | 'close' | 'logout' | 'check' | 'alert'
+export type IconName = 'cash' | 'receipt' | 'flame' | 'bell' | 'chevron-left' | 'menu' | 'close' | 'logout' | 'check' | 'alert' | 'search' | 'sort'
 
 const PATHS: Record<IconName, string[]> = {
   cash: ['M3 7h18v10H3z', 'M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z', 'M6 10v4', 'M18 10v4'],
@@ -11,6 +11,8 @@ const PATHS: Record<IconName, string[]> = {
   logout: ['M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4', 'M10 16l-4-4 4-4', 'M6 12h10'],
   check: ['M6 12.5l4 4 8-9'],
   alert: ['M12 4l9 16H3z', 'M12 10v4', 'M12 17h.01'],
+  search: ['M11 5a6 6 0 1 0 0 12 6 6 0 0 0 0-12z', 'M20 20l-4.5-4.5'],
+  sort: ['M8 5v14', 'M5 16l3 3 3-3', 'M16 19V5', 'M13 8l3-3 3 3'],
 }
 
 type Props = { name: IconName; className?: string; strokeWidth?: number }

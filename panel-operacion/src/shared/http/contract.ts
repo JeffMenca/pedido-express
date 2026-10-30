@@ -36,3 +36,8 @@ export type OrderSummary = {
 export type Order = OrderSummary & {
   refund: { status: 'PENDING' | 'SUCCEEDED' | 'FAILED' | 'RECORDED'; amountCents: number } | null
 }
+
+export type MenuProduct = { sku: string; name: string; priceCents: number }
+export type MenuCategory = { code: string; name: string; products: MenuProduct[] }
+export type MenuCombo = { sku: string; name: string; priceCents: number; mainSku: string; mainCategory: string }
+export type Menu = { categories: MenuCategory[]; combos: MenuCombo[] }
