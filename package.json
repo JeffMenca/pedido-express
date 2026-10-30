@@ -1,0 +1,17 @@
+{
+  "name": "pedido-express",
+  "private": true,
+  "description": "Pedido Express monorepo scripts",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "setup": "node scripts/setup-env.js && npm --prefix api ci && npm --prefix panel-operacion ci && cd app-cliente && flutter pub get",
+    "backend": "node scripts/setup-env.js && docker compose up --build db pasarela-sim api",
+    "backend:dev": "node scripts/setup-env.js && docker compose up -d db pasarela-sim && npm --prefix api run migration:run && npm --prefix api run seed && npm --prefix api run start:dev",
+    "frontend": "npm --prefix panel-operacion run dev",
+    "mobile:ios": "bash scripts/mobile.sh ios",
+    "mobile:android": "bash scripts/mobile.sh android",
+    "stack": "node scripts/setup-env.js && docker compose up --build",
+    "stop": "docker compose down",
+    "test": "npm --prefix api test && npm --prefix panel-operacion test && cd app-cliente && flutter test"
+  }
+}

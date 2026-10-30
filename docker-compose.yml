@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pedido
+      POSTGRES_PASSWORD: pedido
+      POSTGRES_DB: pedido_express
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pedido -d pedido_express"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  pasarela-sim:
+    build: ./pasarela-sim
+    ports:
+      - "4000:4000"
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    env_file: ./api/.env
+    environment:
+      DATABASE_URL: postgres://pedido:pedido@db:5432/pedido_express
+      GATEWAY_URL: http://pasarela-sim:4000
+      WEBHOOK_CALLBACK_URL: http://api:3000/api/webhooks/payments
+      APP_PROFILE: local
+      NODE_ENV: production
+    volumes:
+      - ./api/reports:/app/api/reports
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      pasarela-sim:
+        condition: service_started
+
+  panel:
+    build:
+      context: ./panel-operacion
+      args:
+        VITE_API_URL: http://localhost:3000/api
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  db-data:

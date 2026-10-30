@@ -1,0 +1,112 @@
+{
+  "generatedAt": "2026-10-30T15:04:23.360Z",
+  "source": "datos/menu.json",
+  "loaded": {
+    "products": 10,
+    "combos": 4,
+    "modifiers": 5,
+    "coupons": 3
+  },
+  "entries": [
+    {
+      "entity": "product",
+      "key": "P-004",
+      "action": "CORRECTED",
+      "reason": "PRICE_AS_TEXT",
+      "detail": "\"29.90\" -> 2990 cents"
+    },
+    {
+      "entity": "product",
+      "key": "P-009",
+      "action": "NOT_SELLABLE",
+      "reason": "UNAVAILABLE"
+    },
+    {
+      "entity": "product",
+      "key": "P-010",
+      "action": "DISCARDED",
+      "reason": "EMPTY_PRICE",
+      "detail": "precio=\"\""
+    },
+    {
+      "entity": "product",
+      "key": "P-011",
+      "action": "DISCARDED",
+      "reason": "NEGATIVE_PRICE",
+      "detail": "precio=-8"
+    },
+    {
+      "entity": "product",
+      "key": "P-012",
+      "action": "DISCARDED",
+      "reason": "EMPTY_PRICE",
+      "detail": "precio=null"
+    },
+    {
+      "entity": "product",
+      "key": "P-013",
+      "action": "DISCARDED",
+      "reason": "EMPTY_NAME"
+    },
+    {
+      "entity": "product",
+      "key": "P-002",
+      "action": "DISCARDED",
+      "reason": "DUPLICATE_KEY",
+      "detail": "kept first occurrence; dropped \"Hamburguesa Doble Queso (duplicado)\""
+    },
+    {
+      "entity": "product",
+      "key": "P-014",
+      "action": "DISCARDED",
+      "reason": "INVALID_PRICE",
+      "detail": "precio=\"treinta\""
+    },
+    {
+      "entity": "product",
+      "key": "P-015",
+      "action": "NOT_SELLABLE",
+      "reason": "INACTIVE"
+    },
+    {
+      "entity": "combo",
+      "key": "C-003",
+      "action": "CORRECTED",
+      "reason": "UPGRADE_PRICE_AS_TEXT",
+      "detail": "\"8\" -> 800 cents"
+    },
+    {
+      "entity": "combo",
+      "key": "C-004",
+      "action": "NOT_SELLABLE",
+      "reason": "MAIN_PRODUCT_NOT_SELLABLE",
+      "detail": "principal=P-009"
+    },
+    {
+      "entity": "modifier",
+      "key": "M-04",
+      "action": "NOT_SELLABLE",
+      "reason": "INACTIVE"
+    },
+    {
+      "entity": "modifier",
+      "key": "M-05",
+      "action": "CORRECTED",
+      "reason": "PRICE_AS_TEXT",
+      "detail": "\"4\" -> 400 cents"
+    },
+    {
+      "entity": "modifier",
+      "key": "M-06",
+      "action": "DISCARDED",
+      "reason": "EMPTY_NAME"
+    },
+    {
+      "entity": "coupon",
+      "key": "combo15",
+      "action": "DISCARDED",
+      "reason": "DUPLICATE_KEY",
+      "detail": "same code as COMBO15 ignoring case"
+    }
+  ]
+}
