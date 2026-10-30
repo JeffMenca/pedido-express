@@ -29,34 +29,37 @@ export function CancelOrderModal({ open, orderCode, paidByCard, pending, errorTe
   }
 
   return (
-    <Modal open={open} title={`Cancelar orden ${orderCode}`} onClose={close}>
+    <Modal open={open} eyebrow={orderCode} title="Cancelar orden" onClose={close}>
       <form onSubmit={submit}>
-        <p className="text-sm text-stone-600">
+        <p className="text-sm text-humo">
           {paidByCard
-            ? 'Se solicitará el reembolso total a la pasarela.'
+            ? 'Se pedirá el reembolso total a la pasarela.'
             : 'Si ya se recibió efectivo, se registrará la devolución.'}{' '}
-          Esta acción queda en la bitácora.
+          El motivo queda en la bitácora.
         </p>
-        <label className="mt-4 block text-sm font-medium text-stone-700">
-          Motivo (obligatorio)
+        <label className="mt-5 block text-sm font-semibold text-ink">
+          Motivo
           <textarea
             autoFocus
+            required
             rows={3}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 focus:border-red-700 focus:outline-2 focus:outline-red-700/30"
+            placeholder="Por ejemplo: el cliente se retiró"
+            className="mt-1.5 block w-full resize-none rounded-control border border-ink/15 bg-ticket px-3 py-2.5 text-base font-normal text-ink placeholder:text-ink/35 focus:border-ink focus:outline-none"
           />
         </label>
+        <p className="mt-1.5 text-xs text-humo">Obligatorio, al menos {MIN_REASON} caracteres.</p>
         {errorText && (
-          <p role="alert" className="mt-2 text-sm text-red-700">
+          <p role="alert" className="mt-3 text-sm text-salsa">
             {errorText}
           </p>
         )}
         <div className="mt-6 flex justify-end gap-2">
-          <Button variant="ghost" onClick={close}>
+          <Button variant="quiet" onClick={close}>
             Volver
           </Button>
-          <Button type="submit" variant="danger" disabled={!valid} pending={pending}>
+          <Button type="submit" disabled={!valid} pending={pending}>
             {pending ? 'Cancelando…' : 'Cancelar orden'}
           </Button>
         </div>

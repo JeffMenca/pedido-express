@@ -30,3 +30,8 @@ export function computeChangeCents(totalCents: number, receivedCents: number | n
   if (receivedCents === null || receivedCents < totalCents) return null
   return receivedCents - totalCents
 }
+
+/** Renders integer cents as the plain "150.00" form the cash input accepts. */
+export function centsToInput(cents: number): string {
+  return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`
+}

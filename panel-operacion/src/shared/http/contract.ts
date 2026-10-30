@@ -14,7 +14,12 @@ export type OrderStatus =
 
 export type SessionUser = { id: string; username: string; role: Role }
 
-export type OrderLineSummary = { name: string; quantity: number }
+export type OrderLineSummary = {
+  name: string
+  quantity: number
+  upgradeLarge?: boolean
+  modifiers?: string[]
+}
 
 export type OrderSummary = {
   id: string

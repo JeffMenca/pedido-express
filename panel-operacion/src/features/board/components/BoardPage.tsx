@@ -1,74 +1,110 @@
-import { LayoutGroup } from 'framer-motion'
-import { useMemo } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useMemo, useState } from 'react'
 import type { Role } from '../../../shared/http/contract'
 import { errorMessage } from '../../../shared/http/errors'
+import { EASE_OUT_QUART } from '../../../shared/lib/motion'
 import { useNow } from '../../../shared/lib/time'
-import { Button } from '../../../shared/ui/Button'
-import { columnsForRole, groupByColumn } from '../hooks/columns'
+import { BrandMark } from '../../../shared/ui/BrandMark'
+import { Icon } from '../../../shared/ui/Icon'
+import { useActiveView } from '../hooks/useActiveView'
 import { useBoardOrders } from '../hooks/useBoardOrders'
-import { BoardColumn } from './BoardColumn'
-import { SyncStatus } from './SyncStatus'
-
-const ROLE_LABEL: Record<Role, string> = { CAJERO: 'Caja', COCINA: 'Cocina', SUPERVISOR: 'Supervisor' }
+import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed'
+import { groupByView, hintFor, viewsForRole, type ViewSlug } from '../hooks/views'
+import { PollingNotice } from './PollingNotice'
+import { Sidebar, SidebarDrawer } from './Sidebar'
+import { TicketRail } from './TicketRail'
+import { ViewHeader } from './ViewHeader'
 
 type Props = { username: string; role: Role; onSignOut: () => void }
 
 export function BoardPage({ username, role, onSignOut }: Props) {
-  const columns = useMemo(() => columnsForRole(role), [role])
-  const query = useBoardOrders(columns)
+  const views = useMemo(() => viewsForRole(role), [role])
+  const view = useActiveView(role)
+  const query = useBoardOrders(views)
   const now = useNow(1000)
-  const groups = useMemo(() => (query.data ? groupByColumn(query.data, columns) : null), [query.data, columns])
+  const [collapsed, toggleCollapsed] = useSidebarCollapsed()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const groups = useMemo(() => (query.data ? groupByView(query.data, views) : null), [query.data, views])
+  const counts = useMemo(() => {
+    const result: Partial<Record<ViewSlug, number>> = {}
+    if (groups) for (const v of views) result[v.slug] = groups.get(v.status)?.length ?? 0
+    return result
+  }, [groups, views])
+  const orders = groups?.get(view.status)
+
+  useEffect(() => {
+    if (!drawerOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setDrawerOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [drawerOpen])
+
+  const navProps = { views, counts, activeSlug: view.slug, username, role, onSignOut }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-stone-50 text-stone-900">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 bg-white px-4 py-3 sm:px-6">
-        <div>
-          <h1 className="text-base font-semibold tracking-tight">Pedido Express · Operación</h1>
-          <p className="text-sm text-stone-500">
-            {ROLE_LABEL[role]} · {username}
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <SyncStatus
-            updatedAt={query.dataUpdatedAt}
-            now={now}
-            failing={query.isError && query.data !== undefined}
-            fetching={query.isFetching}
-          />
-          <Button variant="secondary" onClick={onSignOut}>
-            Cerrar sesión
-          </Button>
-        </div>
-      </header>
+    <div className="flex h-dvh bg-steel text-ink">
+      <Sidebar {...navProps} collapsed={collapsed} onToggle={toggleCollapsed} />
 
-      <main className="flex-1 p-4 sm:p-6">
-        {query.isError && query.data === undefined ? (
-          <div role="alert" className="mx-auto mt-16 max-w-md rounded-xl border border-stone-200 bg-white p-6 text-center">
-            <p className="font-medium text-stone-900">No se pudo cargar el tablero</p>
-            <p className="mt-1 text-sm text-stone-600">{errorMessage(query.error)}</p>
-            <Button className="mt-4" variant="secondary" onClick={() => void query.refetch()} pending={query.isFetching}>
-              Reintentar
-            </Button>
-          </div>
-        ) : (
-          <LayoutGroup>
-            <div
-              className="grid gap-4"
-              style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, 260px), 1fr))` }}
-            >
-              {columns.map((column) => (
-                <BoardColumn
-                  key={column.status}
-                  column={column}
-                  orders={groups?.get(column.status)}
-                  role={role}
-                  now={now}
-                />
-              ))}
-            </div>
-          </LayoutGroup>
+      <AnimatePresence>
+        {drawerOpen && (
+          <>
+            <motion.div
+              key="backdrop"
+              className="fixed inset-0 z-40 bg-ink/50 lg:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.15 } }}
+              onClick={() => setDrawerOpen(false)}
+            />
+            <SidebarDrawer key="drawer" {...navProps} onClose={() => setDrawerOpen(false)} />
+          </>
         )}
-      </main>
+      </AnimatePresence>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-16 shrink-0 items-center gap-3 bg-ink px-2 text-white lg:hidden">
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Abrir menú"
+            aria-expanded={drawerOpen}
+            className="grid size-11 place-items-center rounded-control text-white/80 hover:text-white focus-visible:outline-2 focus-visible:outline-mostaza"
+          >
+            <Icon name="menu" />
+          </button>
+          <BrandMark className="size-8" />
+          <span className="font-display text-base font-bold tracking-tight">Pedido Express</span>
+        </header>
+
+        <main className="flex-1 overflow-y-auto">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.section
+              key={view.slug}
+              aria-label={view.title}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { duration: 0.22, ease: EASE_OUT_QUART } }}
+              exit={{ opacity: 0, transition: { duration: 0.12 } }}
+              className="mx-auto max-w-[1440px] px-4 pt-8 pb-16 sm:px-8 lg:px-12 lg:pt-12"
+            >
+              {query.isError && (
+                <PollingNotice
+                  cause={errorMessage(query.error)}
+                  hasData={query.data !== undefined}
+                  retrying={query.isFetching}
+                  onRetry={() => void query.refetch()}
+                />
+              )}
+              <ViewHeader title={view.title} hint={hintFor(view, role)} count={orders?.length} />
+              {!(query.isError && query.data === undefined) && (
+                <TicketRail orders={orders} role={role} now={now} emptyText={view.emptyText} />
+              )}
+            </motion.section>
+          </AnimatePresence>
+        </main>
+      </div>
     </div>
   )
 }

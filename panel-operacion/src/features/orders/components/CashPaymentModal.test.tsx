@@ -43,4 +43,27 @@ describe('CashPaymentModal', () => {
     await user.click(confirm)
     expect(onConfirm).toHaveBeenCalledWith(10000)
   })
+
+  it('fills the received amount from a quick bill and disables bills that do not cover the total', async () => {
+    const user = userEvent.setup()
+    const { input, confirm, onConfirm } = renderModal()
+
+    expect(screen.getByRole('button', { name: 'Q50' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Q100' }))
+    expect(input).toHaveValue('100.00')
+    expect(await screen.findByTestId('cash-change')).toHaveTextContent(/12\.50/)
+
+    await user.click(confirm)
+    expect(onConfirm).toHaveBeenCalledWith(10000)
+  })
+
+  it('charges the exact total with no change', async () => {
+    const user = userEvent.setup()
+    const { onConfirm, confirm } = renderModal()
+
+    await user.click(screen.getByRole('button', { name: 'Exacto' }))
+    expect(await screen.findByTestId('cash-change')).toHaveTextContent(/0\.00/)
+    await user.click(confirm)
+    expect(onConfirm).toHaveBeenCalledWith(8750)
+  })
 })

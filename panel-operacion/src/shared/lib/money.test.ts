@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeChangeCents, formatGTQ, parseAmountToCents } from './money'
+import { centsToInput, computeChangeCents, formatGTQ, parseAmountToCents } from './money'
 
 describe('parseAmountToCents', () => {
   it.each([
@@ -44,5 +44,13 @@ describe('formatGTQ', () => {
   it('formats integer cents as quetzales with two decimals', () => {
     expect(formatGTQ(125075)).toMatch(/Q\s?1,250\.75/)
     expect(formatGTQ(5)).toMatch(/Q\s?0\.05/)
+  })
+})
+
+describe('centsToInput', () => {
+  it('round-trips through parseAmountToCents without float math', () => {
+    expect(centsToInput(8750)).toBe('87.50')
+    expect(centsToInput(5)).toBe('0.05')
+    expect(parseAmountToCents(centsToInput(20000))).toBe(20000)
   })
 })

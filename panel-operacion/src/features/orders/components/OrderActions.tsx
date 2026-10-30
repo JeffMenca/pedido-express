@@ -43,20 +43,20 @@ export function OrderActions({ order, role }: Props) {
 
   return (
     <>
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-4 flex items-center gap-2">
         {primary && (
           <Button className="flex-1" pending={status.isPending} onClick={primary.run}>
             {status.isPending ? primary.pendingLabel : primary.label}
           </Button>
         )}
         {canCancel && (
-          <Button variant="ghost" onClick={() => setDialog('cancel')}>
+          <Button variant="quiet" className={primary ? '' : 'ml-auto'} onClick={() => setDialog('cancel')}>
             Cancelar
           </Button>
         )}
       </div>
       {status.isError && (
-        <p role="alert" className="mt-2 text-sm text-red-700">
+        <p role="alert" className="mt-2 text-sm text-salsa">
           {errorMessage(status.error)}
         </p>
       )}

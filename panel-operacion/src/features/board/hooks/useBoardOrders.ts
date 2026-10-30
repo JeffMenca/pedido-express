@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../../shared/lib/queryKeys'
 import { fetchOperationsOrders } from '../api/board'
-import type { ColumnDef } from './columns'
+import type { ViewDef } from './views'
 
 const POLL_MS = 3000
 
-export function useBoardOrders(columns: ColumnDef[]) {
-  const statuses = columns.map((c) => c.status)
+/** One poll for every view the role can see, so the sidebar counts stay current. */
+export function useBoardOrders(views: ViewDef[]) {
+  const statuses = views.map((v) => v.status)
   return useQuery({
     queryKey: [...queryKeys.operationsOrders, statuses],
     queryFn: ({ signal }) => fetchOperationsOrders(statuses, signal),

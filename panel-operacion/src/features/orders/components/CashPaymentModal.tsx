@@ -1,7 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useState, type FormEvent } from 'react'
-import { computeChangeCents, formatGTQ, parseAmountToCents } from '../../../shared/lib/money'
+import { centsToInput, computeChangeCents, formatGTQ, parseAmountToCents } from '../../../shared/lib/money'
 import { Button } from '../../../shared/ui/Button'
+import { Divider } from '../../../shared/ui/Divider'
 import { Modal } from '../../../shared/ui/Modal'
 
 type Props = {
@@ -14,6 +15,8 @@ type Props = {
   onConfirm: (receivedCents: number) => void
 }
 
+const BILLS_CENTS = [5_000, 10_000, 20_000]
+
 export function CashPaymentModal({ open, orderCode, totalCents, pending, errorText, onClose, onConfirm }: Props) {
   const [raw, setRaw] = useState('')
   const reduceMotion = useReducedMotion()
@@ -21,6 +24,11 @@ export function CashPaymentModal({ open, orderCode, totalCents, pending, errorTe
   const changeCents = computeChangeCents(totalCents, receivedCents)
   const invalidInput = raw.trim() !== '' && receivedCents === null
   const insufficient = receivedCents !== null && changeCents === null
+
+  const quickAmounts = [
+    { label: 'Exacto', cents: totalCents },
+    ...BILLS_CENTS.map((cents) => ({ label: `Q${cents / 100}`, cents })),
+  ]
 
   const close = () => {
     setRaw('')
@@ -33,12 +41,12 @@ export function CashPaymentModal({ open, orderCode, totalCents, pending, errorTe
   }
 
   return (
-    <Modal open={open} title={`Cobrar en efectivo · ${orderCode}`} onClose={close}>
+    <Modal open={open} eyebrow={orderCode} title="Cobrar en efectivo" onClose={close}>
       <form onSubmit={submit}>
-        <p className="text-sm text-stone-600">Total a cobrar</p>
-        <p className="text-3xl font-semibold tabular-nums text-stone-900">{formatGTQ(totalCents)}</p>
+        <p className="text-xs font-semibold text-humo">Total a cobrar</p>
+        <p className="mt-1 font-mono text-[40px] leading-none font-bold tabular-nums text-ink">{formatGTQ(totalCents)}</p>
 
-        <label className="mt-5 block text-sm font-medium text-stone-700">
+        <label className="mt-6 block text-sm font-semibold text-ink">
           Monto recibido (Q)
           <input
             inputMode="decimal"
@@ -48,21 +56,40 @@ export function CashPaymentModal({ open, orderCode, totalCents, pending, errorTe
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             aria-invalid={invalidInput || insufficient}
-            className="mt-1 block min-h-11 w-full rounded-lg border border-stone-300 px-3 text-lg tabular-nums text-stone-900 focus:border-[#C2410C] focus:outline-2 focus:outline-[#C2410C]/30"
+            className="mt-1.5 block min-h-12 w-full rounded-control border border-ink/15 bg-ticket px-3 font-mono text-xl font-semibold tabular-nums text-ink placeholder:text-ink/25 focus:border-ink focus:outline-none aria-[invalid=true]:border-salsa"
           />
         </label>
 
-        <div className="mt-4 flex items-baseline justify-between border-t border-stone-200 pt-4" aria-live="polite">
-          <span className="text-sm text-stone-600">Cambio</span>
-          <span className="relative h-8 overflow-hidden text-2xl font-semibold tabular-nums">
+        <div role="group" aria-label="Montos rápidos" className="mt-3 grid grid-cols-4 gap-2">
+          {quickAmounts.map((q) => (
+            <button
+              key={q.label}
+              type="button"
+              disabled={q.cents < totalCents}
+              aria-pressed={receivedCents === q.cents}
+              onClick={() => setRaw(centsToInput(q.cents))}
+              className={`min-h-11 rounded-control border text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed disabled:border-ink/5 disabled:text-ink/25 aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white ${
+                q.label === 'Exacto' ? '' : 'font-mono'
+              } border-ink/15 text-ink hover:border-ink/50`}
+            >
+              {q.label}
+            </button>
+          ))}
+        </div>
+
+        <Divider className="mt-6" />
+
+        <div className="mt-4 flex items-baseline justify-between" aria-live="polite">
+          <span className="text-sm font-semibold text-humo">Cambio</span>
+          <span className="relative h-9 overflow-hidden font-mono text-[28px] leading-9 font-bold tabular-nums">
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.span
                 key={changeCents ?? 'none'}
                 data-testid="cash-change"
-                className={`block ${changeCents === null ? 'text-stone-400' : 'text-emerald-700'}`}
-                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+                className={`block ${changeCents === null ? 'text-ink/25' : 'text-albahaca'}`}
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
                 transition={{ duration: 0.15 }}
               >
                 {changeCents === null ? '—' : formatGTQ(changeCents)}
@@ -71,20 +98,18 @@ export function CashPaymentModal({ open, orderCode, totalCents, pending, errorTe
           </span>
         </div>
 
-        {invalidInput && <p className="mt-2 text-sm text-red-700">Escribe un monto válido, por ejemplo 150 o 150.50.</p>}
+        {invalidInput && <p className="mt-2 text-sm text-salsa">Escribe un monto válido, por ejemplo 150 o 150.50.</p>}
         {insufficient && (
-          <p className="mt-2 text-sm text-red-700">
-            Faltan {formatGTQ(totalCents - (receivedCents ?? 0))} para cubrir el total.
-          </p>
+          <p className="mt-2 text-sm text-salsa">Faltan {formatGTQ(totalCents - (receivedCents ?? 0))} para cubrir el total.</p>
         )}
         {errorText && (
-          <p role="alert" className="mt-2 text-sm text-red-700">
+          <p role="alert" className="mt-2 text-sm text-salsa">
             {errorText}
           </p>
         )}
 
         <div className="mt-6 flex justify-end gap-2">
-          <Button variant="ghost" onClick={close}>
+          <Button variant="quiet" onClick={close}>
             Volver
           </Button>
           <Button type="submit" disabled={changeCents === null} pending={pending}>
