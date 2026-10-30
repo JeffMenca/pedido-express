@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Clock, guatemalaDate } from '../../../common/clock/clock';
 import { isComboSellable, isProductSellable } from '../domain/catalog';
 import { CatalogRepository } from './catalog.repository';
 
@@ -13,7 +14,10 @@ const CATEGORY_NAMES: Record<string, string> = {
 
 @Injectable()
 export class MenuService {
-  constructor(private readonly catalogRepository: CatalogRepository) {}
+  constructor(
+    private readonly catalogRepository: CatalogRepository,
+    private readonly clock: Clock,
+  ) {}
 
   async getSellableMenu() {
     const catalog = await this.catalogRepository.load();
@@ -60,6 +64,17 @@ export class MenuService {
         appliesTo,
       }));
 
-    return { categories, combos, modifiers };
+    const today = guatemalaDate(this.clock.now());
+    const promotions = catalog.coupons
+      .filter((c) => c.active && c.validFrom <= today && today <= c.validTo)
+      .map(({ code, type, value, minimumCents, validTo }) => ({
+        code,
+        type,
+        value,
+        minimumCents,
+        validTo,
+      }));
+
+    return { categories, combos, modifiers, promotions };
   }
 }

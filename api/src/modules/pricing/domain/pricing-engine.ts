@@ -1,3 +1,4 @@
+import { guatemalaDate } from '../../../common/clock/clock';
 import { DomainError } from '../../../common/errors/domain-error';
 import { Money } from '../../../common/money/money';
 import {
@@ -55,13 +56,6 @@ export interface Quote {
   taxBaseCents: number;
   taxCents: number;
 }
-
-const GUATEMALA_UTC_OFFSET_MS = -6 * 60 * 60 * 1000;
-
-const guatemalaDate = (instant: Date): string =>
-  new Date(instant.getTime() + GUATEMALA_UTC_OFFSET_MS)
-    .toISOString()
-    .slice(0, 10);
 
 export class PricingEngine {
   private readonly products: ReadonlyMap<string, Product>;

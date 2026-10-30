@@ -18,3 +18,11 @@ export class FixedDateClock extends Clock {
     return new Date(`${this.isoDate.slice(0, 10)}T18:00:00Z`);
   }
 }
+
+const GUATEMALA_UTC_OFFSET_MS = -6 * 60 * 60 * 1000;
+
+/** Calendar date (YYYY-MM-DD) in Guatemala time, which has no daylight saving. */
+export const guatemalaDate = (instant: Date): string =>
+  new Date(instant.getTime() + GUATEMALA_UTC_OFFSET_MS)
+    .toISOString()
+    .slice(0, 10);
