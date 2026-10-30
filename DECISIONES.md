@@ -44,9 +44,3 @@ Solo se guardan los últimos 4 dígitos y el id del cobro; la tarjeta se redacta
 - **Secretos** en Secrets Manager; logs JSON y alarmas en CloudWatch (5xx, órdenes en verificación, DLQ, reembolsos fallidos).
 - **Panel** en S3 + CloudFront; **app** en tiendas y web en S3 + CloudFront.
 - **Local vs nube**: el perfil `cloud` exige TLS a la base y usa secretos gestionados; local usa Docker Compose.
-
-## Pendientes
-
-- Job de expiración a los 15 min (la transición ya existe).
-- Reembolso automático de un cobro exitoso que llega sobre una orden cancelada (hoy se alerta en logs).
-- WebSocket/SSE en lugar de polling.
