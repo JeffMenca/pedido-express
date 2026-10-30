@@ -1,7 +1,7 @@
 {
   "name": "api",
   "version": "0.0.1",
-  "description": "",
+  "description": "Pedido Express API: menu, pricing, orders, card and cash payments, webhooks and audit.",
   "author": "",
   "private": true,
   "license": "UNLICENSED",

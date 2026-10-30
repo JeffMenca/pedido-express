@@ -31,6 +31,8 @@ services:
       WEBHOOK_CALLBACK_URL: http://api:3000/api/webhooks/payments
       APP_PROFILE: local
       NODE_ENV: production
+    volumes:
+      - ./api/reports:/app/api/reports
     ports:
       - "3000:3000"
     depends_on:
