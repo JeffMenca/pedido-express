@@ -13,28 +13,26 @@ Decisiones técnicas: [DECISIONES.md](DECISIONES.md).
 
 ## Requisitos
 
-Docker 24+, Node 20 y Flutter 3.x.
+Docker 24+, Node 20, Flutter 3.x y, para iOS, Xcode con un simulador.
 
 ## Ejecución
 
-```bash
-cp api/.env.example api/.env   # completar las credenciales de la pasarela y JWT_SECRET
-docker compose up --build
-```
+Desde la raíz del repositorio (`api/.env` se crea solo en la primera ejecución):
+
+| Comando | Qué levanta |
+| --- | --- |
+| `npm run setup` | Crea `api/.env` e instala dependencias de API, panel y app |
+| `npm run backend` | Base de datos, pasarela y API en Docker (migraciones y carga inicial incluidas) |
+| `npm run backend:dev` | Base de datos y pasarela en Docker, API local con recarga en caliente |
+| `npm run frontend` | Panel de operación en modo desarrollo |
+| `npm run mobile:ios` | App cliente en el simulador de iOS (`IOS_SIMULATOR` cambia el dispositivo) |
+| `npm run mobile:android` | App cliente en el emulador de Android |
+| `npm run stack` | Todo en Docker, incluido el panel |
+| `npm run stop` | Detiene los contenedores |
 
 - API: http://localhost:3000/api · Swagger: http://localhost:3000/api/docs
-- Panel: http://localhost:5173
-- Pasarela: http://localhost:4000
-
-La API aplica migraciones y la carga inicial del menú al arrancar; el reporte de normalización queda en `api/reports/seed-report.json`.
-
-Sin Docker (con `docker compose up -d db pasarela-sim`):
-
-```bash
-cd api && npm ci && npm run migration:run && npm run seed && npm run start:dev
-cd panel-operacion && npm ci && npm run dev
-cd app-cliente && flutter pub get && flutter run -d chrome --dart-define=API_URL=http://localhost:3000/api
-```
+- Panel: http://localhost:5173 · Pasarela: http://localhost:4000
+- El reporte de normalización del menú queda en `api/reports/seed-report.json`.
 
 ## Usuarios semilla
 
