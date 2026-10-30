@@ -1,0 +1,308 @@
+{
+  "fechaCorte": "2026-10-30",
+  "productos": [
+    {
+      "sku": "P-001",
+      "nombre": "Hamburguesa Clásica",
+      "categoria": "HAMBURGUESAS",
+      "precio": 32.0,
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-002",
+      "nombre": "Hamburguesa Doble Queso",
+      "categoria": "HAMBURGUESAS",
+      "precio": 45.5,
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-003",
+      "nombre": "Sándwich de Pollo Crujiente",
+      "categoria": "POLLO",
+      "precio": 38.0,
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-004",
+      "nombre": "Nuggets de pollo (8 piezas)",
+      "categoria": "POLLO",
+      "precio": "29.90",
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-005",
+      "nombre": "Papas fritas medianas",
+      "categoria": "ACOMPAÑAMIENTOS",
+      "precio": 15.0,
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-006",
+      "nombre": "Papas fritas grandes",
+      "categoria": "ACOMPAÑAMIENTOS",
+      "precio": 19.0,
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-007",
+      "nombre": "Gaseosa mediana",
+      "categoria": "BEBIDAS",
+      "precio": 12.0,
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-008",
+      "nombre": "Gaseosa grande",
+      "categoria": "BEBIDAS",
+      "precio": 15.0,
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-009",
+      "nombre": "Helado de vainilla",
+      "categoria": "POSTRES",
+      "precio": 9.5,
+      "disponible": false,
+      "activo": true
+    },
+    {
+      "sku": "P-010",
+      "nombre": "Ensalada César",
+      "categoria": "ENSALADAS",
+      "precio": "",
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-011",
+      "nombre": "Pie de manzana",
+      "categoria": "POSTRES",
+      "precio": -8.0,
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-012",
+      "nombre": "Café americano",
+      "categoria": "BEBIDAS",
+      "precio": null,
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-013",
+      "nombre": "   ",
+      "categoria": "BEBIDAS",
+      "precio": 10.0,
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-002",
+      "nombre": "Hamburguesa Doble Queso (duplicado)",
+      "categoria": "HAMBURGUESAS",
+      "precio": 47.0,
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-014",
+      "nombre": "Wrap de pollo",
+      "categoria": "POLLO",
+      "precio": "treinta",
+      "disponible": true,
+      "activo": true
+    },
+    {
+      "sku": "P-015",
+      "nombre": "Agua pura",
+      "categoria": "BEBIDAS",
+      "precio": 8.0,
+      "disponible": true,
+      "activo": false
+    }
+  ],
+  "combos": [
+    {
+      "sku": "C-001",
+      "nombre": "Combo Clásico",
+      "principal": "P-001",
+      "precio": 52.0,
+      "acompanamientos": [
+        "P-005"
+      ],
+      "bebidas": [
+        "P-007"
+      ],
+      "upgradeGrande": {
+        "precio": 8.0,
+        "acompanamiento": "P-006",
+        "bebida": "P-008"
+      },
+      "activo": true
+    },
+    {
+      "sku": "C-002",
+      "nombre": "Combo Doble Queso",
+      "principal": "P-002",
+      "precio": 64.0,
+      "acompanamientos": [
+        "P-005"
+      ],
+      "bebidas": [
+        "P-007"
+      ],
+      "upgradeGrande": {
+        "precio": 8.0,
+        "acompanamiento": "P-006",
+        "bebida": "P-008"
+      },
+      "activo": true
+    },
+    {
+      "sku": "C-003",
+      "nombre": "Combo Pollo Crujiente",
+      "principal": "P-003",
+      "precio": 58.0,
+      "acompanamientos": [
+        "P-005"
+      ],
+      "bebidas": [
+        "P-007"
+      ],
+      "upgradeGrande": {
+        "precio": "8",
+        "acompanamiento": "P-006",
+        "bebida": "P-008"
+      },
+      "activo": true
+    },
+    {
+      "sku": "C-004",
+      "nombre": "Combo Postre",
+      "principal": "P-009",
+      "precio": 40.0,
+      "acompanamientos": [
+        "P-005"
+      ],
+      "bebidas": [
+        "P-007"
+      ],
+      "upgradeGrande": null,
+      "activo": true
+    }
+  ],
+  "modificadores": [
+    {
+      "codigo": "M-01",
+      "nombre": "Queso extra",
+      "precio": 5.0,
+      "activo": true,
+      "aplicaA": [
+        "HAMBURGUESAS",
+        "POLLO"
+      ]
+    },
+    {
+      "codigo": "M-02",
+      "nombre": "Tocino",
+      "precio": 7.5,
+      "activo": true,
+      "aplicaA": [
+        "HAMBURGUESAS"
+      ]
+    },
+    {
+      "codigo": "M-03",
+      "nombre": "Sin cebolla",
+      "precio": 0,
+      "activo": true,
+      "aplicaA": [
+        "HAMBURGUESAS"
+      ]
+    },
+    {
+      "codigo": "M-04",
+      "nombre": "Salsa especial",
+      "precio": 3.0,
+      "activo": false,
+      "aplicaA": [
+        "HAMBURGUESAS",
+        "POLLO"
+      ]
+    },
+    {
+      "codigo": "M-05",
+      "nombre": "Jalapeños",
+      "precio": "4",
+      "activo": true,
+      "aplicaA": [
+        "HAMBURGUESAS",
+        "POLLO"
+      ]
+    },
+    {
+      "codigo": "M-06",
+      "nombre": "",
+      "precio": 2.0,
+      "activo": true,
+      "aplicaA": [
+        "HAMBURGUESAS"
+      ]
+    }
+  ],
+  "cupones": [
+    {
+      "codigo": "COMBO15",
+      "tipo": "PORCENTAJE",
+      "valor": 15,
+      "minimo": 100.0,
+      "vigenteDesde": "2026-10-01",
+      "vigenteHasta": "2026-10-31",
+      "activo": true
+    },
+    {
+      "codigo": "FERIA10",
+      "tipo": "PORCENTAJE",
+      "valor": 10,
+      "minimo": 0,
+      "vigenteDesde": "2026-09-15",
+      "vigenteHasta": "2026-10-15",
+      "activo": true
+    },
+    {
+      "codigo": "FIJO20",
+      "tipo": "MONTO",
+      "valor": 20.0,
+      "minimo": 80.0,
+      "vigenteDesde": "2026-10-01",
+      "vigenteHasta": "2026-12-31",
+      "activo": true
+    },
+    {
+      "codigo": "combo15",
+      "tipo": "PORCENTAJE",
+      "valor": "",
+      "minimo": null,
+      "vigenteDesde": "2026-10-01",
+      "vigenteHasta": "2026-10-31",
+      "activo": true
+    }
+  ],
+  "parametros": {
+    "moneda": "GTQ",
+    "ivaPorcentaje": 12,
+    "preciosIncluyenIva": true,
+    "cargoDomicilio": 15.0,
+    "maxCantidadPorLinea": 20,
+    "maxArticulosPorOrden": 30
+  }
+}

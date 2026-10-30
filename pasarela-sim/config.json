@@ -1,0 +1,16 @@
+{
+  "variant": "PE-A",
+  "port": 4000,
+  "apiKey": "sk_sim_pe_a_7Rk2Lq9w",
+  "webhookSecret": "whsec_pe_a_Xm41vTq8Zp",
+  "processingDelayMs": 1500,
+  "timeoutDelayMs": 15000,
+  "cards": {
+    "4111111111111111": "APPROVE",
+    "4000000000000002": "DECLINE",
+    "4000000000000119": "TIMEOUT",
+    "4000000000000259": "DUPLICATE_WEBHOOK",
+    "4000000000000341": "DELAYED_FAIL",
+    "4000000000000077": "BAD_SIGNATURE_THEN_VALID"
+  }
+}

@@ -1,0 +1,18 @@
+# Dependencias y builds
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Entorno / secretos
+.env
+.env.*
+!.env.example
+
+# SO / editores
+.DS_Store
+.idea/
+*.log
+
+
