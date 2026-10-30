@@ -7,9 +7,12 @@ import '../../../core/errors/error_messages.dart';
 import '../../../core/format/money.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/feedback.dart';
+import '../../../core/widgets/pressable_scale.dart';
+import '../../../core/widgets/shimmer.dart';
 import '../application/order_controllers.dart';
 import '../data/orders_repository.dart';
 import '../domain/order.dart';
+import 'card_preview.dart';
 
 final _orderProvider = FutureProvider.autoDispose.family<Order, String>(
   (ref, id) => ref.read(ordersRepositoryProvider).getOrder(id),
@@ -92,7 +95,7 @@ class _CardPaymentScreenState extends ConsumerState<CardPaymentScreen> {
         ],
       ),
       body: order.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const _PaymentSkeleton(),
         error: (e, _) => ErrorView(
           error: e,
           onRetry: () => ref.invalidate(_orderProvider(widget.orderId)),
@@ -142,6 +145,14 @@ class _CardPaymentScreenState extends ConsumerState<CardPaymentScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
+                ListenableBuilder(
+                  listenable: Listenable.merge([_number, _exp]),
+                  builder: (_, _) => CardPreview(
+                    digits: _number.text.replaceAll(' ', ''),
+                    expiry: _exp.text,
+                  ),
+                ),
                 const SizedBox(height: 20),
                 TextFormField(
                   controller: _number,
@@ -152,7 +163,7 @@ class _CardPaymentScreenState extends ConsumerState<CardPaymentScreen> {
                   autofillHints: const [AutofillHints.creditCardNumber],
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(19),
+                    LengthLimitingTextInputFormatter(cardNumberLength),
                     _CardNumberFormatter(),
                   ],
                   onChanged: _onCardChanged,
@@ -187,12 +198,10 @@ class _CardPaymentScreenState extends ConsumerState<CardPaymentScreen> {
                         obscureText: true,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(4),
+                          LengthLimitingTextInputFormatter(cvvLength),
                         ],
                         onChanged: _onCardChanged,
-                        validator: (v) => RegExp(r'^\d{3,4}$').hasMatch(v ?? '')
-                            ? null
-                            : 'CVV de 3 o 4 dígitos.',
+                        validator: validateCvv,
                       ),
                     ),
                   ],
@@ -222,18 +231,36 @@ class _CardPaymentScreenState extends ConsumerState<CardPaymentScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: FilledButton(
-            onPressed: order.hasValue && !payment.submitting ? _pay : null,
-            child: AnimatedSwitcher(
-              duration: AppMotion.enter,
-              child: payment.submitting
-                  ? const Text('Procesando pago…', key: ValueKey('busy'))
-                  : Text(
-                      outcome is PaymentDeclined
-                          ? 'Pagar con otra tarjeta'
-                          : 'Pagar',
-                      key: ValueKey(outcome.runtimeType),
-                    ),
+          child: PressableScale(
+            enabled: order.hasValue && !payment.submitting,
+            child: FilledButton(
+              onPressed: order.hasValue && !payment.submitting ? _pay : null,
+              child: AnimatedSwitcher(
+                duration: AppMotion.enter,
+                child: payment.submitting
+                    ? const Row(
+                        key: ValueKey('busy'),
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.humo,
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Text('Procesando pago…'),
+                        ],
+                      )
+                    : Text(
+                        outcome is PaymentDeclined
+                            ? 'Pagar con otra tarjeta'
+                            : 'Pagar',
+                        key: ValueKey(outcome.runtimeType),
+                      ),
+              ),
             ),
           ),
         ),
@@ -242,13 +269,53 @@ class _CardPaymentScreenState extends ConsumerState<CardPaymentScreen> {
   }
 }
 
+class _PaymentSkeleton extends StatelessWidget {
+  const _PaymentSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Shimmer(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+        child: Column(
+          children: [
+            SkeletonBox(width: double.infinity, height: 72, radius: 14),
+            SizedBox(height: 16),
+            AspectRatio(
+              aspectRatio: 1.586,
+              child: SkeletonBox(
+                width: double.infinity,
+                height: double.infinity,
+                radius: 18,
+              ),
+            ),
+            SizedBox(height: 20),
+            SkeletonBox(width: double.infinity, height: 56, radius: 10),
+            SizedBox(height: 12),
+            SkeletonBox(width: double.infinity, height: 56, radius: 10),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The processor only accepts 16-digit cards with a 3-digit CVV.
+const cardNumberLength = 16;
+const cvvLength = 3;
+
 String? validateCardNumber(String? value) {
   final digits = (value ?? '').replaceAll(' ', '');
-  if (digits.length < 13 || digits.length > 19) {
-    return 'Ingresa un número de tarjeta válido.';
+  if (!RegExp('^\\d{$cardNumberLength}\$').hasMatch(digits)) {
+    return 'El número debe tener $cardNumberLength dígitos.';
   }
   return null;
 }
+
+String? validateCvv(String? value) =>
+    RegExp('^\\d{$cvvLength}\$').hasMatch(value ?? '')
+    ? null
+    : 'El CVV debe tener $cvvLength dígitos.';
 
 String? validateExpiry(String? value, DateTime now) {
   final match = RegExp(r'^(\d{2})/(\d{2})$').firstMatch(value ?? '');

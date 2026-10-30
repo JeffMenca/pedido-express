@@ -1,71 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../errors/api_exception.dart';
-import '../format/money.dart';
 import '../theme/app_theme.dart';
-
-/// Amount whose characters roll vertically when the value changes.
-class AnimatedAmount extends StatelessWidget {
-  const AnimatedAmount(this.cents, {super.key, this.style});
-
-  final int cents;
-  final TextStyle? style;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = formatCents(cents);
-    final effective = AppFonts.mono(
-      style ?? DefaultTextStyle.of(context).style,
-    );
-    return Semantics(
-      label: text,
-      excludeSemantics: true,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < text.length; i++)
-            AnimatedSwitcher(
-              duration: AppMotion.enter,
-              switchInCurve: AppMotion.curve,
-              transitionBuilder: (child, animation) => ClipRect(
-                child: SlideTransition(
-                  position: Tween(
-                    begin: const Offset(0, 0.4),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: FadeTransition(opacity: animation, child: child),
-                ),
-              ),
-              child: Text(
-                text[i],
-                key: ValueKey('${text.length}-$i-${text[i]}'),
-                style: effective,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class SkeletonBox extends StatelessWidget {
-  const SkeletonBox({super.key, this.width = 72, this.height = 16});
-
-  final double width;
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: AppColors.skeleton,
-        borderRadius: BorderRadius.circular(4),
-      ),
-    );
-  }
-}
 
 class ErrorView extends StatelessWidget {
   const ErrorView({super.key, required this.error, this.onRetry});
@@ -110,9 +46,11 @@ class EmptyView extends StatelessWidget {
     required this.title,
     this.message,
     this.action,
+    this.art,
   });
 
   final IconData icon;
+  final Widget? art;
   final String title;
   final String? message;
   final Widget? action;
@@ -126,9 +64,10 @@ class EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 36, color: AppColors.faint),
+            ?art,
+            if (art == null) Icon(icon, size: 36, color: AppColors.faint),
             const SizedBox(height: 12),
-            Text(title, style: theme.textTheme.titleMedium),
+            Text(title, style: theme.textTheme.titleLarge),
             if (message != null) ...[
               const SizedBox(height: 4),
               Text(

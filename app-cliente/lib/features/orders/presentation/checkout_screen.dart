@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/api_exception.dart';
+import '../../../core/errors/error_messages.dart';
+import '../../../core/format/money.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/feedback.dart';
+import '../../../core/widgets/pressable_scale.dart';
 import '../../cart/application/cart_controller.dart';
 import '../../cart/domain/cart.dart';
 import '../../cart/presentation/quote_summary.dart';
@@ -42,8 +45,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final cart = ref.read(cartProvider);
+    // A coupon that does not apply yet is left out so the order matches the quote shown.
+    final couponApplies = ref.read(quoteProvider).value?.couponNotice == null;
     final body = {
-      ...cart.toQuoteJson(),
+      ...cart.toQuoteJson(includeCoupon: couponApplies),
       'paymentMethod': _method.api,
       if (cart.channel == Channel.domicilio)
         'delivery': {
@@ -90,10 +95,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final quoteError = quote.hasError && !quote.isLoading
         ? ApiException.from(quote.error!)
         : null;
-    final couponError =
-        quoteError != null && quoteError.code.startsWith('COUPON_')
-        ? quoteError.userMessage
-        : null;
+    final couponNotice = quote.value?.couponNotice;
+    final couponError = couponNotice == null
+        ? null
+        : couponNotice.missingCents != null && couponNotice.missingCents! > 0
+        ? 'Aún no aplica: agrega ${formatCents(couponNotice.missingCents!)} más. Tu pedido se cobrará sin descuento.'
+        : '${messageForCode(couponNotice.errorCode)} Tu pedido se cobrará sin descuento.';
     final submitError = submission.hasError
         ? ApiException.from(submission.error!).userMessage
         : null;
@@ -102,8 +109,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _method = PaymentMethod.tarjeta;
     }
     final ready = !quote.isLoading && !quote.hasError && quote.value != null;
-    final sectionStyle = theme.textTheme.labelLarge?.copyWith(
-      color: AppColors.humo,
+    final sectionStyle = AppFonts.display(
+      theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
     );
 
     return Scaffold(
@@ -115,23 +122,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              Text('CÓMO RECIBES TU PEDIDO', style: sectionStyle),
-              RadioGroup<Channel>(
-                groupValue: cart.channel,
-                onChanged: (c) {
-                  if (c != null) controller.setChannel(c);
-                },
-                child: Column(
-                  children: [
-                    for (final c in Channel.values)
-                      RadioListTile<Channel>(
-                        contentPadding: EdgeInsets.zero,
-                        value: c,
-                        title: Text(c.label),
-                      ),
-                  ],
-                ),
+              Text('Cómo recibes tu pedido', style: sectionStyle),
+              const SizedBox(height: 10),
+              _OptionGrid(
+                children: [
+                  for (final c in Channel.values)
+                    OptionCard(
+                      icon: _channelIcon(c),
+                      title: c.label,
+                      subtitle: _channelHint(c),
+                      selected: cart.channel == c,
+                      onTap: () => controller.setChannel(c),
+                    ),
+                ],
               ),
+              const SizedBox(height: 12),
               AnimatedSize(
                 duration: AppMotion.enter,
                 curve: AppMotion.curve,
@@ -180,7 +185,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     : const SizedBox(width: double.infinity),
               ),
               const SizedBox(height: 12),
-              Text('CUPÓN', style: sectionStyle),
+              Text('Cupón', style: sectionStyle),
               const SizedBox(height: 8),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,9 +194,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: TextField(
                       controller: _coupon,
                       textCapitalization: TextCapitalization.characters,
+                      style: AppFonts.mono(theme.textTheme.bodyLarge),
                       decoration: InputDecoration(
                         hintText: 'Código de cupón',
                         errorText: couponError,
+                        helperText:
+                            cart.couponCode != null &&
+                                (quote.value?.quote.discountCents ?? 0) > 0
+                            ? 'Cupón aplicado a tu comanda'
+                            : null,
+                        helperStyle: const TextStyle(color: AppColors.albahaca),
                         errorMaxLines: 2,
                       ),
                       onSubmitted: controller.setCoupon,
@@ -216,35 +228,36 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              Text('MÉTODO DE PAGO', style: sectionStyle),
-              RadioGroup<PaymentMethod>(
-                groupValue: _method,
-                onChanged: (m) {
-                  if (m != null) setState(() => _method = m);
-                },
-                child: Column(
-                  children: [
-                    for (final m in PaymentMethod.values)
-                      RadioListTile<PaymentMethod>(
-                        contentPadding: EdgeInsets.zero,
-                        value: m,
-                        enabled: !(isDelivery && m == PaymentMethod.efectivo),
-                        title: Text(m.label),
-                        subtitle: isDelivery && m == PaymentMethod.efectivo
-                            ? const Text(
-                                'No disponible para entrega a domicilio',
-                              )
-                            : null,
-                      ),
-                  ],
-                ),
+              Text('Método de pago', style: sectionStyle),
+              const SizedBox(height: 10),
+              _OptionGrid(
+                children: [
+                  for (final m in PaymentMethod.values)
+                    OptionCard(
+                      icon: m == PaymentMethod.tarjeta
+                          ? Icons.credit_card
+                          : Icons.payments_outlined,
+                      title: m.label,
+                      subtitle: isDelivery && m == PaymentMethod.efectivo
+                          ? 'No disponible para entrega a domicilio'
+                          : m == PaymentMethod.tarjeta
+                          ? 'Paga ahora en la app'
+                          : 'Paga al recoger tu pedido',
+                      selected: _method == m,
+                      enabled: !(isDelivery && m == PaymentMethod.efectivo),
+                      onTap: () => setState(() => _method = m),
+                    ),
+                ],
               ),
+              const SizedBox(height: 20),
+              Text('Tu comanda', style: sectionStyle),
+              const SizedBox(height: 10),
               const SizedBox(height: 8),
               if (quoteError != null && couponError == null) ...[
                 InlineMessage(quoteError.userMessage),
                 const SizedBox(height: 12),
               ],
-              QuoteSummary(quote: quote.value, loading: quote.isLoading),
+              QuoteSummary(quote: quote.value?.quote, loading: quote.isLoading),
               if (submitError != null) ...[
                 const SizedBox(height: 12),
                 InlineMessage(submitError),
@@ -256,23 +269,170 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: FilledButton(
-            onPressed: ready && !submitting ? _submit : null,
-            child: AnimatedSwitcher(
+          child: PressableScale(
+            enabled: ready && !submitting,
+            child: FilledButton(
+              onPressed: ready && !submitting ? _submit : null,
+              child: AnimatedSwitcher(
+                duration: AppMotion.enter,
+                child: submitting
+                    ? const SizedBox(
+                        key: ValueKey('busy'),
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        _method == PaymentMethod.tarjeta
+                            ? 'Confirmar y pagar con tarjeta'
+                            : 'Confirmar pedido',
+                        key: ValueKey(_method),
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+IconData _channelIcon(Channel c) => switch (c) {
+  Channel.mostrador => Icons.storefront_outlined,
+  Channel.kiosko => Icons.touch_app_outlined,
+  Channel.autoservicio => Icons.directions_car_outlined,
+  Channel.domicilio => Icons.delivery_dining_outlined,
+};
+
+String _channelHint(Channel c) => switch (c) {
+  Channel.mostrador => 'Recoge en caja',
+  Channel.kiosko => 'Pide desde el kiosko',
+  Channel.autoservicio => 'Recoge desde tu auto',
+  Channel.domicilio => 'Te lo llevamos',
+};
+
+class _OptionGrid extends StatelessWidget {
+  const _OptionGrid({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 10.0;
+        final width = (constraints.maxWidth - gap) / 2;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final c in children) SizedBox(width: width, child: c),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Selectable card: the chosen option turns ink with a mustard icon.
+class OptionCard extends StatelessWidget {
+  const OptionCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.selected,
+    required this.onTap,
+    this.subtitle,
+    this.enabled = true,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final fg = selected ? AppColors.ticket : AppColors.ink;
+    return Semantics(
+      selected: selected,
+      enabled: enabled,
+      button: true,
+      child: AnimatedOpacity(
+        duration: AppMotion.enter,
+        opacity: enabled ? 1 : 0.5,
+        child: PressableScale(
+          enabled: enabled,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: enabled ? onTap : null,
+            child: AnimatedContainer(
               duration: AppMotion.enter,
-              child: submitting
-                  ? const SizedBox(
-                      key: ValueKey('busy'),
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      _method == PaymentMethod.tarjeta
-                          ? 'Confirmar y pagar con tarjeta'
-                          : 'Confirmar pedido',
-                      key: ValueKey(_method),
+              curve: AppMotion.curve,
+              constraints: const BoxConstraints(minHeight: 112),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: selected ? AppColors.ink : AppColors.ticket,
+                borderRadius: BorderRadius.circular(AppRadii.card),
+                border: Border.all(
+                  color: selected ? AppColors.ink : AppColors.ticket,
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      AnimatedContainer(
+                        duration: AppMotion.enter,
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: selected ? AppColors.inkSoft : AppColors.steel,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          icon,
+                          size: 22,
+                          color: selected ? AppColors.mostaza : AppColors.ink,
+                        ),
+                      ),
+                      const Spacer(),
+                      AnimatedScale(
+                        scale: selected ? 1 : 0,
+                        duration: AppMotion.enter,
+                        curve: Curves.easeOutBack,
+                        child: const Icon(
+                          Icons.check_circle,
+                          size: 20,
+                          color: AppColors.mostaza,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  AnimatedDefaultTextStyle(
+                    duration: AppMotion.enter,
+                    style: theme.textTheme.titleSmall!.copyWith(
+                      color: fg,
+                      fontWeight: FontWeight.w700,
                     ),
+                    child: Text(title),
+                  ),
+                  if (subtitle != null)
+                    AnimatedDefaultTextStyle(
+                      duration: AppMotion.enter,
+                      style: theme.textTheme.bodySmall!.copyWith(
+                        color: selected ? AppColors.faint : AppColors.humo,
+                      ),
+                      child: Text(subtitle!),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

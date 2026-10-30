@@ -2,13 +2,19 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/dev/dev_tools.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 
 void main() {
   // Retries are explicit (buttons, polling); automatic ones would replay
   // business errors such as an invalid coupon.
-  runApp(ProviderScope(retry: (_, _) => null, child: const PedidoExpressApp()));
+  runApp(
+    AppRestarter(
+      builder: (_) =>
+          ProviderScope(retry: (_, _) => null, child: const PedidoExpressApp()),
+    ),
+  );
 }
 
 class PedidoExpressApp extends StatefulWidget {
@@ -29,11 +35,24 @@ class _PedidoExpressAppState extends State<PedidoExpressApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Pedido Express',
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
-      routerConfig: _router,
+    return ValueListenableBuilder<bool>(
+      valueListenable: showPerformanceOverlay,
+      builder: (context, performanceOverlay, _) => MaterialApp.router(
+        title: 'Pedido Express',
+        showPerformanceOverlay: performanceOverlay,
+        debugShowCheckedModeBanner: false,
+        theme: buildAppTheme(),
+        routerConfig: _router,
+        // Tapping outside a field dismisses the keyboard; numeric pads on iOS
+        // have no return key.
+        builder: (context, child) => DevToolsOverlay(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            child: child,
+          ),
+        ),
+      ),
     );
   }
 }

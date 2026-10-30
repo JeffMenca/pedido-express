@@ -8,7 +8,10 @@ import '../../../core/errors/error_messages.dart';
 import '../../../core/format/money.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/feedback.dart';
-import '../../../core/widgets/ticket.dart';
+import '../../../core/widgets/pressable_scale.dart';
+import '../../../core/widgets/product_art.dart';
+import '../../../core/widgets/shimmer.dart';
+import '../../../core/widgets/ticket_card.dart';
 import '../../cart/domain/cart.dart';
 import '../../cart/presentation/quote_summary.dart';
 import '../application/order_controllers.dart';
@@ -42,7 +45,7 @@ class TrackingScreen extends ConsumerWidget {
       body: order.when(
         skipLoadingOnReload: true,
         skipLoadingOnRefresh: true,
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const _TrackingSkeleton(),
         error: (e, _) =>
             ErrorView(error: e, onRetry: () => ref.invalidate(provider)),
         data: (order) => _TrackingBody(order: order),
@@ -86,12 +89,15 @@ class _TrackingBody extends StatelessWidget {
       ],
     );
     final children = <Widget>[
-      AnimatedSwitcher(
-        duration: AppMotion.enter,
-        child: KeyedSubtree(
-          key: ValueKey('${order.status}-${order.refund?.status}'),
-          child: _StatusNotice(order: order),
+      _SceneCard(order: order),
+      const SizedBox(height: 12),
+      Container(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+        decoration: BoxDecoration(
+          color: AppColors.ticket,
+          borderRadius: BorderRadius.circular(AppRadii.card),
         ),
+        child: StatusTimeline(status: order.status),
       ),
       const SizedBox(height: 12),
       PrintIn(
@@ -99,13 +105,6 @@ class _TrackingBody extends StatelessWidget {
           quote: order.quote,
           header: header,
           statusColor: statusColor(order.status),
-        ),
-      ),
-      const SizedBox(height: 16),
-      Card(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
-          child: StatusTimeline(status: order.status),
         ),
       ),
     ];
@@ -138,123 +137,255 @@ Color statusColor(OrderStatus status) => switch (status) {
   OrderStatus.expirada => AppColors.faint,
 };
 
-class _StatusNotice extends StatelessWidget {
-  const _StatusNotice({required this.order});
+typedef _Scene = ({
+  String asset,
+  Color color,
+  String title,
+  String body,
+  bool retry,
+});
+
+_Scene _sceneFor(Order order) {
+  final cash = order.paymentMethod == PaymentMethod.efectivo;
+  _Scene scene(
+    String asset,
+    Color color,
+    String title,
+    String body, {
+    bool retry = false,
+  }) => (asset: asset, color: color, title: title, body: body, retry: retry);
+  return switch (order.status) {
+    OrderStatus.pendientePago when cash => scene(
+      'recibido',
+      AppColors.mostaza,
+      'Paga en caja',
+      'Muestra el código ${order.code} en caja y paga ${formatCents(order.quote.totalCents)} en efectivo.',
+    ),
+    OrderStatus.pendientePago => scene(
+      'recibido',
+      AppColors.mostaza,
+      'Procesando tu pago',
+      'Esperamos la confirmación del banco. No cierres esta pantalla.',
+    ),
+    OrderStatus.pagoEnVerificacion => scene(
+      'recibido',
+      AppColors.mostaza,
+      'Verificando tu pago',
+      'El banco tardó en responder. Confirmamos el resultado automáticamente; no vuelvas a pagar.',
+    ),
+    OrderStatus.pagada => scene(
+      'pagado',
+      AppColors.albahaca,
+      'Recibimos tu pago',
+      'Tu comanda ya está en el riel. La cocina la toma en un momento.',
+    ),
+    OrderStatus.enPreparacion => scene(
+      'cocina',
+      AppColors.salsa,
+      'Tu pedido está en la plancha',
+      'Lo estamos preparando ahora mismo.',
+    ),
+    OrderStatus.lista => scene(
+      'lista',
+      AppColors.albahaca,
+      'Tu pedido está listo',
+      'Pasa a recogerlo o espera a tu repartidor.',
+    ),
+    OrderStatus.entregada => scene(
+      'entregado',
+      AppColors.albahaca,
+      'Buen provecho',
+      'Entregamos tu pedido ${order.code}.',
+    ),
+    OrderStatus.pagoRechazado => scene(
+      'rechazado',
+      AppColors.salsa,
+      'Pago rechazado',
+      declineMessage(order.payment?.declineCode),
+      retry: true,
+    ),
+    OrderStatus.cancelada => scene(
+      'cancelado',
+      AppColors.salsa,
+      'Pedido cancelado',
+      _refundText(order.refund),
+    ),
+    OrderStatus.expirada => scene(
+      'cancelado',
+      AppColors.salsa,
+      'Pedido expirado',
+      'El pedido no se pagó a tiempo. Puedes hacer uno nuevo.',
+    ),
+  };
+}
+
+String _refundText(Refund? refund) {
+  if (refund == null) return 'No se realizó ningún cobro.';
+  final amount = formatCents(refund.amountCents);
+  return switch (refund.status) {
+    'SUCCEEDED' => 'Reembolsamos $amount a tu tarjeta.',
+    'PENDING' => 'Reembolso de $amount en proceso.',
+    'FAILED' =>
+      'El reembolso de $amount no se pudo completar. Contacta a la sucursal.',
+    _ => 'Reembolso de $amount registrado en caja.',
+  };
+}
+
+/// Illustrated status: the scene cross-fades and slides slightly when the
+/// order advances; copy follows the same transition.
+class _SceneCard extends StatelessWidget {
+  const _SceneCard({required this.order});
 
   final Order order;
 
   @override
   Widget build(BuildContext context) {
-    final cash = order.paymentMethod == PaymentMethod.efectivo;
-    switch (order.status) {
-      case OrderStatus.pendientePago when cash:
-        return _Notice(
-          color: AppColors.mostaza,
-          title: 'Paga en caja',
-          body:
-              'Muestra el código ${order.code} en caja y paga ${formatCents(order.quote.totalCents)} en efectivo.',
-        );
-      case OrderStatus.pendientePago:
-        return const _Notice(
-          color: AppColors.mostaza,
-          title: 'Procesando tu pago',
-          body:
-              'Esperamos la confirmación del banco. No cierres esta pantalla.',
-        );
-      case OrderStatus.pagoEnVerificacion:
-        return const _Notice(
-          color: AppColors.mostaza,
-          title: 'Verificando tu pago',
-          body: 'El banco tardó en responder. Confirmamos el resultado automáticamente; no vuelvas a pagar.',
-        );
-      case OrderStatus.pagoRechazado:
-        return _Notice(
-          color: AppColors.salsa,
-          title: 'Pago rechazado',
-          body: declineMessage(order.payment?.declineCode),
-          action: FilledButton(
-            onPressed: () => context.push('/orders/${order.id}/pay'),
-            child: const Text('Pagar con otra tarjeta'),
-          ),
-        );
-      case OrderStatus.cancelada:
-        return _Notice(
-          color: AppColors.salsa,
-          title: 'Pedido cancelado',
-          body: _refundText(order.refund),
-        );
-      case OrderStatus.expirada:
-        return const _Notice(
-          color: AppColors.salsa,
-          title: 'Pedido expirado',
-          body: 'El pedido no se pagó a tiempo. Puedes hacer uno nuevo.',
-        );
-      case OrderStatus.lista:
-        return const _Notice(
-          color: AppColors.albahaca,
-          title: 'Tu pedido está listo',
-          body: 'Pasa a recogerlo o espera a tu repartidor.',
-        );
-      case OrderStatus.pagada ||
-          OrderStatus.enPreparacion ||
-          OrderStatus.entregada:
-        return const SizedBox.shrink();
-    }
-  }
+    final theme = Theme.of(context);
+    final scene = _sceneFor(order);
+    final reduced = AppMotion.reduced(context);
+    final key = ValueKey('${order.status}-${order.refund?.status}');
 
-  String _refundText(Refund? refund) {
-    if (refund == null) return 'No se realizó ningún cobro.';
-    final amount = formatCents(refund.amountCents);
-    return switch (refund.status) {
-      'SUCCEEDED' => 'Reembolsamos $amount a tu tarjeta.',
-      'PENDING' => 'Reembolso de $amount en proceso.',
-      'FAILED' =>
-        'El reembolso de $amount no se pudo completar. Contacta a la sucursal.',
-      _ => 'Reembolso de $amount registrado en caja.',
-    };
+    Widget transition(Widget child, Animation<double> animation) {
+      final fade = FadeTransition(opacity: animation, child: child);
+      if (reduced) return fade;
+      return SlideTransition(
+        position: Tween(
+          begin: const Offset(0.06, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: animation, curve: AppMotion.curve)),
+        child: fade,
+      );
+    }
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.ticket,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: 1.6,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 420),
+              color: Color.alphaBlend(
+                scene.color.withValues(alpha: 0.12),
+                AppColors.ticket,
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: AnimatedSwitcher(
+                duration: reduced
+                    ? AppMotion.enter
+                    : const Duration(milliseconds: 420),
+                switchInCurve: AppMotion.curve,
+                transitionBuilder: transition,
+                child: SvgArt(
+                  Illustrations.scene(scene.asset),
+                  key: ValueKey(scene.asset),
+                ),
+              ),
+            ),
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 420),
+            height: 4,
+            color: scene.color,
+          ),
+          AnimatedSize(
+            duration: AppMotion.enter,
+            curve: AppMotion.curve,
+            alignment: Alignment.topCenter,
+            child: AnimatedSwitcher(
+              duration: AppMotion.enter,
+              transitionBuilder: transition,
+              layoutBuilder: (current, previous) => Stack(
+                alignment: Alignment.topLeft,
+                children: [...previous, ?current],
+              ),
+              child: Padding(
+                key: key,
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        scene.title,
+                        style: AppFonts.display(
+                          theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      scene.body,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.humo,
+                        height: 1.35,
+                      ),
+                    ),
+                    if (scene.retry) ...[
+                      const SizedBox(height: 14),
+                      PressableScale(
+                        child: FilledButton(
+                          onPressed: () =>
+                              context.push('/orders/${order.id}/pay'),
+                          child: const Text('Pagar con otra tarjeta'),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class _Notice extends StatelessWidget {
-  const _Notice({
-    required this.color,
-    required this.title,
-    required this.body,
-    this.action,
-  });
-
-  final Color color;
-  final String title;
-  final String body;
-  final Widget? action;
+class _TrackingSkeleton extends StatelessWidget {
+  const _TrackingSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(left: BorderSide(color: color, width: 4)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.ink,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(body),
-              if (action != null) ...[const SizedBox(height: 12), action!],
-            ],
+    return Shimmer(
+      child: ListView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        children: [
+          const AspectRatio(
+            aspectRatio: 1.6,
+            child: SkeletonBox(
+              width: double.infinity,
+              height: double.infinity,
+              radius: 20,
+            ),
           ),
-        ),
+          const SizedBox(height: 16),
+          const SkeletonBox(width: 220, height: 26, radius: 6),
+          const SizedBox(height: 10),
+          const SkeletonBox(width: 280, height: 14),
+          const SizedBox(height: 24),
+          for (var i = 0; i < 4; i++)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: Row(
+                children: [
+                  SkeletonBox(width: 20, height: 20, circle: true),
+                  SizedBox(width: 12),
+                  SkeletonBox(width: 140, height: 14),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

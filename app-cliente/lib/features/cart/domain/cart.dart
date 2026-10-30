@@ -39,6 +39,7 @@ class CartLine {
     this.upgradeLarge = false,
     this.modifierCodes = const [],
     this.modifierNames = const [],
+    this.categoryCode,
   });
 
   final String id;
@@ -50,6 +51,9 @@ class CartLine {
   final List<String> modifierCodes;
   final List<String> modifierNames;
 
+  /// Only used to tint the thumbnail; never sent to the API.
+  final String? categoryCode;
+
   CartLine copyWith({int? quantity}) => CartLine(
     id: id,
     type: type,
@@ -59,6 +63,7 @@ class CartLine {
     upgradeLarge: upgradeLarge,
     modifierCodes: modifierCodes,
     modifierNames: modifierNames,
+    categoryCode: categoryCode,
   );
 
   Map<String, dynamic> toJson() => {
@@ -95,9 +100,41 @@ class CartState {
   );
 
   /// Body for POST /orders/quote; also the base of POST /orders.
-  Map<String, dynamic> toQuoteJson() => {
+  Map<String, dynamic> toQuoteJson({bool includeCoupon = true}) => {
     'channel': channel.api,
     'items': [for (final l in lines) l.toJson()],
-    if (couponCode != null && couponCode!.isNotEmpty) 'couponCode': couponCode,
+    if (includeCoupon && couponCode != null && couponCode!.isNotEmpty)
+      'couponCode': couponCode,
+  };
+}
+
+/// A configured line that has not been added to the cart yet.
+class LineDraft {
+  const LineDraft({
+    required this.type,
+    required this.sku,
+    required this.name,
+    required this.quantity,
+    this.upgradeLarge = false,
+    this.modifierCodes = const [],
+    this.modifierNames = const [],
+    this.categoryCode,
+  });
+
+  final ItemType type;
+  final String sku;
+  final String name;
+  final int quantity;
+  final bool upgradeLarge;
+  final List<String> modifierCodes;
+  final List<String> modifierNames;
+  final String? categoryCode;
+
+  Map<String, dynamic> toJson() => {
+    'type': type.api,
+    'sku': sku,
+    'quantity': quantity,
+    if (type == ItemType.combo) 'upgradeLarge': upgradeLarge,
+    if (modifierCodes.isNotEmpty) 'modifiers': modifierCodes,
   };
 }

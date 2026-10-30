@@ -2,6 +2,7 @@ import 'package:app_cliente/core/router/app_router.dart';
 import 'package:app_cliente/features/cart/domain/cart.dart';
 import 'package:app_cliente/features/menu/data/menu_repository.dart';
 import 'package:app_cliente/features/menu/domain/menu.dart';
+import 'package:app_cliente/features/menu/presentation/product_detail_screen.dart';
 import 'package:app_cliente/features/orders/data/orders_repository.dart';
 import 'package:app_cliente/features/orders/domain/order.dart';
 import 'package:dio/dio.dart';
@@ -129,14 +130,23 @@ void main() {
 
     await tester.tap(find.text('Combo Clásico'));
     await tester.pumpAndSettle();
+    await tester.drag(
+      find.descendant(
+        of: find.byType(ProductDetailScreen),
+        matching: find.byType(Scrollable),
+      ),
+      const Offset(0, -2000),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Agrandar combo'));
     await tester.tap(find.text('Tocino'));
     await tester.tap(find.widgetWithIcon(IconButton, Icons.add));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Agregar al carrito'));
+    await tester.tap(find.text('Agregar · '));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Ver carrito · 2 artículos'));
+    expect(find.text('2 artículos'), findsOneWidget);
+    await tester.tap(find.text('Ver carrito'));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
 
@@ -151,13 +161,14 @@ void main() {
     ]);
     expect(find.text('Agrandado · Tocino'), findsNWidgets(2));
     expect(find.text('2×'), findsOneWidget);
-    expect(find.text('Q135.00'), findsOneWidget);
+    // Row total and ticket line, both from the API quote.
+    expect(find.text('Q135.00'), findsNWidgets(2));
     expect(find.text('TOTAL'), findsOneWidget);
 
     await tester.tap(find.text('Continuar'));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
-    expect(find.text('MÉTODO DE PAGO'), findsOneWidget);
+    expect(find.text('Método de pago'), findsOneWidget);
     await tester.tap(find.text('A domicilio'));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
@@ -185,6 +196,7 @@ void main() {
 
     expect(find.text('PE-0042'), findsOneWidget);
     expect(find.text('En preparación'), findsOneWidget);
+    expect(find.text('Tu pedido está en la plancha'), findsOneWidget);
     expect(find.text('IVA incluido (12%)'), findsOneWidget);
     expect(find.text('A domicilio · Tarjeta · •••• 1111'), findsOneWidget);
 

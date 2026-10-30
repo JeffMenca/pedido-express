@@ -4,8 +4,8 @@ import '../theme/app_theme.dart';
 
 /// Thermal kitchen ticket: perforated top edge, rounded foot and an optional
 /// 4 px status bar on the left.
-class Ticket extends StatelessWidget {
-  const Ticket({super.key, required this.child, this.statusColor});
+class TicketCard extends StatelessWidget {
+  const TicketCard({super.key, required this.child, this.statusColor});
 
   final Widget child;
   final Color? statusColor;

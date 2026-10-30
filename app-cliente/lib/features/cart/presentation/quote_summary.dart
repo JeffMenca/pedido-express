@@ -2,8 +2,9 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/format/money.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/feedback.dart';
-import '../../../core/widgets/ticket.dart';
+import '../../../core/widgets/odometer.dart';
+import '../../../core/widgets/shimmer.dart';
+import '../../../core/widgets/ticket_card.dart';
 import '../../orders/domain/order.dart';
 
 /// The quote rendered as a kitchen ticket, with amounts exactly as returned by
@@ -31,7 +32,7 @@ class QuoteSummary extends StatelessWidget {
     final muted = body?.copyWith(color: AppColors.humo);
 
     Widget amount(int cents, {TextStyle? style}) =>
-        AnimatedAmount(cents, style: style ?? body);
+        Odometer(cents, style: style ?? body);
 
     Widget row(String label, Widget value, {TextStyle? style}) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -48,17 +49,45 @@ class QuoteSummary extends StatelessWidget {
     final List<Widget> content;
     if (q == null) {
       content = [
-        for (var i = 0; i < 3; i++)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                SkeletonBox(width: 150),
-                Spacer(),
-                SkeletonBox(width: 64),
-              ],
-            ),
+        Shimmer(
+          child: Column(
+            children: [
+              for (final w in const [150.0, 120.0, 170.0])
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      const SkeletonBox(width: 22),
+                      const SizedBox(width: 12),
+                      SkeletonBox(width: w),
+                      const Spacer(),
+                      const SkeletonBox(width: 64),
+                    ],
+                  ),
+                ),
+              const TicketRule(),
+              for (final w in const [80.0, 60.0])
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  child: Row(
+                    children: [
+                      SkeletonBox(width: w),
+                      const Spacer(),
+                      const SkeletonBox(width: 56),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 6),
+              const Row(
+                children: [
+                  SkeletonBox(width: 70, height: 22),
+                  Spacer(),
+                  SkeletonBox(width: 96, height: 22),
+                ],
+              ),
+            ],
           ),
+        ),
       ];
     } else {
       final totalStyle = AppFonts.mono(
@@ -135,7 +164,7 @@ class QuoteSummary extends StatelessWidget {
       ];
     }
 
-    return Ticket(
+    return TicketCard(
       statusColor: statusColor,
       child: AnimatedOpacity(
         duration: AppMotion.enter,

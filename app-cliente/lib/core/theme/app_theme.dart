@@ -14,17 +14,41 @@ abstract final class AppColors {
   static const faint = Color(0xFF9CA3AF);
   static const skeleton = Color(0xFFEEF0F3);
   static const warningText = Color(0xFFB45309);
+  static const shimmerHighlight = Color(0xFFF7F8FA);
+  static const inkSoft = Color(0xFF2A2933);
+  static const inkLine = Color(0xFF3A3944);
+}
+
+/// Card backgrounds tinted by menu category.
+abstract final class CategoryTints {
+  static const combos = Color(0xFFFFF1C9);
+  static const hamburguesas = Color(0xFFFBE3D4);
+  static const pollo = Color(0xFFFDEBC8);
+  static const acompanamientos = Color(0xFFFDE2DF);
+  static const bebidas = Color(0xFFDDEBF7);
+
+  static Color of(String? categoryCode) => switch (categoryCode) {
+    'COMBOS' => combos,
+    'HAMBURGUESAS' => hamburguesas,
+    'POLLO' => pollo,
+    'ACOMPAÑAMIENTOS' || 'ACOMPANAMIENTOS' => acompanamientos,
+    'BEBIDAS' => bebidas,
+    _ => AppColors.steel,
+  };
 }
 
 abstract final class AppRadii {
   static const card = 14.0;
   static const control = 10.0;
+  static const bar = 20.0;
 }
 
 abstract final class AppMotion {
   static const enter = Duration(milliseconds: 220);
   static const exit = Duration(milliseconds: 150);
   static const print = Duration(milliseconds: 260);
+  static const press = Duration(milliseconds: 120);
+  static const flight = Duration(milliseconds: 560);
   static const curve = Cubic(0.25, 1, 0.5, 1);
 
   static bool reduced(BuildContext context) =>
@@ -93,6 +117,10 @@ ThemeData buildAppTheme() {
   );
   return base.copyWith(
     scaffoldBackgroundColor: AppColors.steel,
+    textSelectionTheme: const TextSelectionThemeData(
+      cursorColor: AppColors.ink,
+      selectionHandleColor: AppColors.ink,
+    ),
     textTheme: text,
     appBarTheme: AppBarTheme(
       backgroundColor: AppColors.steel,
@@ -142,6 +170,13 @@ ThemeData buildAppTheme() {
       style: TextButton.styleFrom(foregroundColor: AppColors.ink),
     ),
     inputDecorationTheme: InputDecorationTheme(
+      floatingLabelStyle: WidgetStateTextStyle.resolveWith(
+        (states) => TextStyle(
+          color: states.contains(WidgetState.error)
+              ? AppColors.salsa
+              : AppColors.ink,
+        ),
+      ),
       filled: true,
       fillColor: AppColors.ticket,
       border: controlBorder,

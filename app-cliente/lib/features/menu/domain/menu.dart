@@ -106,16 +106,50 @@ class Modifier {
   );
 }
 
+enum PromotionType { porcentaje, monto }
+
+class Promotion {
+  const Promotion({
+    required this.code,
+    required this.type,
+    required this.value,
+    required this.minimumCents,
+    this.validTo,
+  });
+
+  final String code;
+  final PromotionType type;
+
+  /// Basis points for PORCENTAJE (1500 = 15 %), cents for MONTO.
+  final int value;
+  final int minimumCents;
+  final String? validTo;
+
+  factory Promotion.fromJson(Map<String, dynamic> json) => Promotion(
+    code: json['code'] as String,
+    type: json['type'] == 'MONTO'
+        ? PromotionType.monto
+        : PromotionType.porcentaje,
+    value: json['value'] as int,
+    minimumCents: json['minimumCents'] as int? ?? 0,
+    validTo: json['validTo'] as String?,
+  );
+}
+
 class Menu {
   const Menu({
     required this.categories,
     required this.combos,
     required this.modifiers,
+    this.promotions = const [],
   });
+
+  static const combosCode = 'COMBOS';
 
   final List<Category> categories;
   final List<Combo> combos;
   final List<Modifier> modifiers;
+  final List<Promotion> promotions;
 
   factory Menu.fromJson(Map<String, dynamic> json) => Menu(
     categories: [
@@ -130,7 +164,38 @@ class Menu {
       for (final m in json['modifiers'] as List)
         Modifier.fromJson(m as Map<String, dynamic>),
     ],
+    promotions: [
+      for (final p in json['promotions'] as List? ?? const [])
+        Promotion.fromJson(p as Map<String, dynamic>),
+    ],
   );
+
+  Product? productBySku(String sku) {
+    for (final c in categories) {
+      for (final p in c.products) {
+        if (p.sku == sku) return p;
+      }
+    }
+    return null;
+  }
+
+  Combo? comboBySku(String sku) {
+    for (final c in combos) {
+      if (c.sku == sku) return c;
+    }
+    return null;
+  }
+
+  /// SKU of a product by display name; combos list their parts by name.
+  String? skuForName(String name) {
+    final needle = name.trim().toLowerCase();
+    for (final c in categories) {
+      for (final p in c.products) {
+        if (p.name.trim().toLowerCase() == needle) return p.sku;
+      }
+    }
+    return null;
+  }
 
   /// Modifiers only apply when their `appliesTo` includes the category.
   List<Modifier> modifiersFor(String categoryCode) => [
